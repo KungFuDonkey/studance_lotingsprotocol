@@ -561,6 +561,7 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments&
         bfOutput = BellmanFord(args);
     }
 
+    // final update for terminal
     printf("\r%.2f%%", 100.0f);
     // Create spacing for the rest of the program
     printf("\n\n");
