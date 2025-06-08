@@ -2,6 +2,7 @@
 #include "Studancer.h"
 #include "DanceClass.h"
 #include "MinCostMaxFlow.h"
+#include "Lottery.h"
 #include "Assignment.h"
 #include "Statistics.h"
 #include "Export.h"
@@ -25,20 +26,60 @@ int main(int argc, char* argv[])
     // Load all dancers
     std::vector<Studancer> dancers = LoadDancers(classes);
 
-    // Encode the mincost maxflow problem
-    MinCostMaxFlowArgs mcmf = EncodeMinCostMaxFlow(dancers, classes);
+    if (cliArgs.lottery)
+    {
+        printf("*******************************************************************************\n");
+        printf("=================== Running Lottery algorithm for assignment ==================\n");
+        printf("*******************************************************************************\n\n");
 
-    // Solve min cost max flow
-    auto result = MinCostMaxFlow(mcmf, cliArgs);
+        // Create assignment
+        Assignment assignment = Lottery(dancers, classes);
 
-    // Retrieve solution from min cost max flow
-    Assignment assignment = DecodeMinCostMaxFlow(mcmf);
+        // Print statistics to the terminal
+        PrintAssignmentStats(assignment);
 
-    // Print statistics to the terminal
-    PrintAssignmentStats(assignment);
+        // Export solution
+        ExportAssignment(assignment, "ClassAssignment_Lottery", cliArgs);
 
-    // Export solution
-    ExportAssignment(assignment);
+        printf("*******************************************************************************\n");
+        printf("================== Finished Lottery algorithm for assignment ==================\n");
+        printf("*******************************************************************************\n\n");
+    }
+
+    if (cliArgs.mcmf)
+    {
+        if (cliArgs.lottery)
+        {
+            printf("\n\n\n\n");
+        }
+
+        printf("*******************************************************************************\n");
+        printf("==================== Running MCMF algorithm for assignment ====================\n");
+        printf("*******************************************************************************\n\n");
+
+        // Encode the mincost maxflow problem
+        MinCostMaxFlowArgs mcmf = EncodeMinCostMaxFlow(dancers, classes);
+
+        // Solve min cost max flow
+        auto result = MinCostMaxFlow(mcmf, cliArgs);
+
+        // Retrieve solution from min cost max flow
+        Assignment assignment = DecodeMinCostMaxFlow(mcmf);
+
+        // Dump the decision log
+        DumpDecisionLog(mcmf);
+
+        // Print statistics to the terminal
+        PrintAssignmentStats(assignment);
+
+        // Export solution
+        ExportAssignment(assignment, "ClassAssignment_MCMF", cliArgs);
+
+        printf("*******************************************************************************\n");
+        printf("=================== Finished MCMF algorithm for assignment ====================\n");
+        printf("*******************************************************************************\n\n");
+    }
+
 
     // Wait for input to exit
     system("pause");

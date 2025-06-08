@@ -13,7 +13,7 @@
 // not 7FFFFFFF to prevent an overflow
 #define INF 0x3FFFFFFF
 
-inline void DumpBuffer(MinCostMaxFlowArgs& args)
+inline void DumpBuffer(const MinCostMaxFlowArgs& args)
 {
     auto path = GetOutputFolder() / "dump.bin";
 
@@ -66,7 +66,7 @@ inline std::string NodeTypeToString(NodeType nodeType)
     return "Unkown";
 }
 
-inline NodeType GetNodeType(MinCostMaxFlowArgs& args, int node)
+inline NodeType GetNodeType(const MinCostMaxFlowArgs& args, int node)
 {
     if (node == 0)
     {
@@ -94,7 +94,7 @@ inline NodeType GetNodeType(MinCostMaxFlowArgs& args, int node)
     }
 }
 
-inline std::string GetNodeName(MinCostMaxFlowArgs& args, int node)
+inline std::string GetNodeName(const MinCostMaxFlowArgs& args, int node)
 {
     NodeType nodeType = GetNodeType(args, node);
     if (nodeType == Source)
@@ -127,7 +127,26 @@ inline std::string GetNodeName(MinCostMaxFlowArgs& args, int node)
     }
 }
 
-inline const Studancer& GetDancerFromNode(MinCostMaxFlowArgs& args, int node)
+std::string PathToString(const MinCostMaxFlowArgs& args, const std::vector<int>& path)
+{
+    std::string output = "";
+    for (auto& node : path)
+    {
+        NodeType nodeType = GetNodeType(args, node);
+        std::string nodeTypeName = NodeTypeToString(nodeType);
+        std::string nodeName = GetNodeName(args, node);
+
+        output += std::to_string(node);
+        output += " (type: ";
+        output += nodeTypeName;
+        output += ", name: ";
+        output += nodeName;
+        output += ")\n";
+    }
+    return output;
+}
+
+inline const Studancer& GetDancerFromNode(const MinCostMaxFlowArgs& args, int node)
 {
     NodeType nodeType = GetNodeType(args, node);
     if (nodeType != Dancer)
@@ -139,7 +158,7 @@ inline const Studancer& GetDancerFromNode(MinCostMaxFlowArgs& args, int node)
 }
 
 // inline functions for bidirectional accesses
-inline int GetDistance(MinCostMaxFlowArgs& args, int u)
+inline int GetDistance(const MinCostMaxFlowArgs& args, int u)
 {
     if (u >= args.numNodes)
     {
@@ -159,7 +178,7 @@ inline void SetDistance(MinCostMaxFlowArgs& args, int u, int value)
     }
     args.distance[u] = value;
 }
-inline int GetParent(MinCostMaxFlowArgs& args, int u)
+inline int GetParent(const MinCostMaxFlowArgs& args, int u)
 {
     if (u >= args.numNodes)
     {
@@ -179,7 +198,7 @@ inline void SetParent(MinCostMaxFlowArgs& args, int u, int value)
     }
     args.parent[u] = value;
 }
-inline int GetFlow(MinCostMaxFlowArgs& args, int u, int v)
+inline int GetFlow(const MinCostMaxFlowArgs& args, int u, int v)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
@@ -209,7 +228,7 @@ inline void AddFlow(MinCostMaxFlowArgs& args, int u, int v, int value)
     }
     args.flow[u * args.numNodes + v] += value;
 }
-inline int GetCost(MinCostMaxFlowArgs& args, int u, int v)
+inline int GetCost(const MinCostMaxFlowArgs& args, int u, int v)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
@@ -229,7 +248,7 @@ inline void SetCost(MinCostMaxFlowArgs& args, int u, int v, int value)
     }
     args.cost[u * args.numNodes + v] = value;
 }
-inline int GetCapacity(MinCostMaxFlowArgs& args, int u, int v)
+inline int GetCapacity(const MinCostMaxFlowArgs& args, int u, int v)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
@@ -249,7 +268,7 @@ inline void SetCapacity(MinCostMaxFlowArgs& args, int u, int v, int value)
     }
     args.capacity[u * args.numNodes + v] = value;
 }
-inline int CanFlow(MinCostMaxFlowArgs& args, int u, int v)
+inline int CanFlow(const MinCostMaxFlowArgs& args, int u, int v)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
@@ -399,15 +418,21 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments&
     printf("Assigned:\n");
     while (bfOutput.first < INF) {
 
+        Decision decision = {};
+
         if (bfOutput.first != -INF && bfOutput.second == args.sinkNode)
         {
             // Update flow for path, small optimization here is that we know the max flow over a path is 1
             // This is because you can only CHOOSE a dance class once, and as we always need to go over a choice
             // to get from the source to the sink, the max flow is always 1
+            decision.type = AssignDancer;
+
+            int initialCost = minCost;
 
             int currentNode = args.sinkNode;
             while (currentNode != args.sourceNode)
             {
+                decision.changedNodes.push_back(currentNode);
                 int p = GetParent(args, currentNode);
 
                 // Update flow in both the normal and residual graph
@@ -426,77 +451,70 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments&
 
                 currentNode = p;
             }
+            decision.changedNodes.push_back(args.sourceNode);
 
-            if (cliArgs.isTest)
+            for (int node = 1; node < args.sinkNode; node++)
             {
-                for (int node = 1; node < args.sinkNode; node++)
+                int incomming = 0;
+                int outgoing = 0;
+
+                for (int neighbour : args.adjecencyList[node])
                 {
-                    int incomming = 0;
-                    int outgoing = 0;
+                    incomming += GetFlow(args, neighbour, node);
+                    outgoing += GetFlow(args, node, neighbour);
 
-                    for (int neighbour : args.adjecencyList[node])
-                    {
-                        incomming += GetFlow(args, neighbour, node);
-                        outgoing += GetFlow(args, node, neighbour);
-
-                        if (GetFlow(args, neighbour, node) < 0)
-                        {
-                            NodeType nodeType = GetNodeType(args, node);
-                            std::string nodeTypeName = NodeTypeToString(nodeType);
-                            std::string nodeName = GetNodeName(args, node);
-                            printf("\nFailed flow conservation: Negative incomming for node %i with NodeType %s and Name %s\n", node, nodeTypeName.c_str(), nodeName.c_str());
-                            DumpBuffer(args);
-                            exit(-1);
-                        }
-
-                        if (GetFlow(args, node, neighbour) < 0)
-                        {
-                            NodeType nodeType = GetNodeType(args, node);
-                            std::string nodeTypeName = NodeTypeToString(nodeType);
-                            std::string nodeName = GetNodeName(args, node);
-                            printf("\nFailed flow conservation: Negative outgoing for node %i with NodeType %s and Name %s\n", node, nodeTypeName.c_str(), nodeName.c_str());
-                            DumpBuffer(args);
-                            exit(-1);
-                        }
-                    }
-
-                    if (incomming != outgoing)
+                    if (GetFlow(args, neighbour, node) < 0)
                     {
                         NodeType nodeType = GetNodeType(args, node);
                         std::string nodeTypeName = NodeTypeToString(nodeType);
                         std::string nodeName = GetNodeName(args, node);
+                        printf("\nFailed flow conservation: Negative incomming for node %i with NodeType %s and Name %s\n", node, nodeTypeName.c_str(), nodeName.c_str());
+                        DumpBuffer(args);
+                        exit(-1);
+                    }
 
-                        printf("\nFailed flow conservation for node %i with NodeType %s and Name %s after updating path:\n", node, nodeTypeName.c_str(), nodeName.c_str());
-
-                        currentNode = args.sinkNode;
-                        NodeType currentNodeType = GetNodeType(args, currentNode);
-                        std::string currentNodeTypeName = NodeTypeToString(currentNodeType);
-                        std::string currentNodeName = GetNodeName(args, currentNode);
-
-                        int prevNode = 0;
-
-                        while (currentNode != args.sourceNode)
-                        {
-                            int p = GetParent(args, currentNode);
-
-                            printf("%i (type: %s, name: %s)\n", currentNode, currentNodeTypeName.c_str(), currentNodeName.c_str());
-                            prevNode = currentNode;
-                            currentNode = p;
-                            currentNodeType = GetNodeType(args, currentNode);
-                            currentNodeTypeName = NodeTypeToString(currentNodeType);
-                            currentNodeName = GetNodeName(args, currentNode);
-                        }
-                        printf("%i (type: %s, name: %s)\n", currentNode, currentNodeTypeName.c_str(), currentNodeName.c_str());
-
-                        printf("incomming: %i, outgoing: %i", incomming, outgoing);
-
+                    if (GetFlow(args, node, neighbour) < 0)
+                    {
+                        NodeType nodeType = GetNodeType(args, node);
+                        std::string nodeTypeName = NodeTypeToString(nodeType);
+                        std::string nodeName = GetNodeName(args, node);
+                        printf("\nFailed flow conservation: Negative outgoing for node %i with NodeType %s and Name %s\n", node, nodeTypeName.c_str(), nodeName.c_str());
                         DumpBuffer(args);
                         exit(-1);
                     }
                 }
+
+                if (incomming != outgoing)
+                {
+                    NodeType nodeType = GetNodeType(args, node);
+                    std::string nodeTypeName = NodeTypeToString(nodeType);
+                    std::string nodeName = GetNodeName(args, node);
+
+                    printf("\nFailed flow conservation for node %i with NodeType %s and Name %s after updating path:\n", node, nodeTypeName.c_str(), nodeName.c_str());
+
+                    currentNode = args.sinkNode;
+                    NodeType currentNodeType = GetNodeType(args, currentNode);
+                    std::string currentNodeTypeName = NodeTypeToString(currentNodeType);
+                    std::string currentNodeName = GetNodeName(args, currentNode);
+
+                    // reverse the path
+                    std::vector<int> path;
+                    for (int i = (int)decision.changedNodes.size() - 1; i > 0; i--)
+                    {
+                        path.push_back(decision.changedNodes[i]);
+                    }
+                    std::string pathString = PathToString(args, path);
+                    printf("%s\n", pathString.c_str());
+
+                    printf("incomming: %i, outgoing: %i", incomming, outgoing);
+
+                    DumpBuffer(args);
+                    exit(-1);
+                }
             }
 
-
+            decision.flowChange += 1;
+            decision.costChange += (minCost - initialCost);
             maxFlow++;
             float percentageAssigned = ((float)maxFlow / (float)args.expectedMaxFlow) * 100.f;
             printf("\r%.2f%%", percentageAssigned);
@@ -527,6 +545,8 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments&
             DumpBuffer(args);
             exit(-1);
         }
+
+        args.decisions.push_back(decision);
 
         bfOutput = BellmanFord(args);
     }
@@ -888,5 +908,113 @@ Assignment DecodeMinCostMaxFlow(MinCostMaxFlowArgs& args)
     }
 
     return assignment;
+}
+
+void DumpDecisionLog(const MinCostMaxFlowArgs& args)
+{
+    auto outputPath = GetOutputFolder() / "DecisionLog_MCMF.txt";
+    std::ofstream outputFile(outputPath);
+
+    int decisionNumber = 1;
+    for (auto& decision : args.decisions)
+    {
+        outputFile << "Decision ";
+        outputFile << decisionNumber;
+        outputFile << " (flow change: ";
+        outputFile << decision.flowChange;
+        outputFile << ", cost change: ";
+        outputFile << decision.costChange;
+        outputFile << ")\n";
+
+        // reverse the path
+        std::vector<int> path;
+        for (int i = (int)decision.changedNodes.size() - 1; i > 0; i--)
+        {
+            path.push_back(decision.changedNodes[i]);
+        }
+
+        if (decision.type == AssignDancer)
+        {
+            const Studancer& dancer = GetDancerFromNode(args, path[1]);
+            std::string className = GetNodeName(args, path[2]);
+
+            outputFile << "Assigned dancer ";
+            outputFile << dancer.relationNumber;
+            outputFile << " with priority group ";
+            outputFile << DancerPriorityGroupToString(dancer.priorityGroup);
+            outputFile << " to ";
+            outputFile << className;
+
+            // if the path is longer than 4 someone else was moved
+            if (path.size() > 4)
+            {
+                int offset = 3;
+
+                outputFile << " by updating the assignment:\n";
+
+                for (int index = 2; index < path.size() - 2; index++)
+                {
+                    int currentNode = path[index];
+                    int nextNode = path[index + 1];
+
+                    NodeType currentNodeType = GetNodeType(args, currentNode);
+                    NodeType nextNodeType = GetNodeType(args, nextNode);
+
+                    if (currentNodeType == Dancer && nextNodeType == Class)
+                    {
+                        const Studancer& updatedDancer = GetDancerFromNode(args, currentNode);
+                        std::string updatedClass = GetNodeName(args, nextNode);
+                        outputFile << "Assigned dancer ";
+                        outputFile << updatedDancer.relationNumber;
+                        outputFile << " with priority group ";
+                        outputFile << DancerPriorityGroupToString(updatedDancer.priorityGroup);
+                        outputFile << " to ";
+                        outputFile << updatedClass;
+                        outputFile << "\n";
+                    }
+                    else if (currentNodeType == Class && nextNodeType == Dancer)
+                    {
+                        const Studancer& updatedDancer = GetDancerFromNode(args, nextNode);
+                        std::string updatedClass = GetNodeName(args, currentNode);
+                        outputFile << "Unassigned dancer ";
+                        outputFile << updatedDancer.relationNumber;
+                        outputFile << " with priority group ";
+                        outputFile << DancerPriorityGroupToString(updatedDancer.priorityGroup);
+                        outputFile << " from ";
+                        outputFile << updatedClass;
+                        outputFile << "\n";
+                    }
+                    else if (currentNodeType == Dancer && nextNodeType == Source)
+                    {
+                        const Studancer& updatedDancer = GetDancerFromNode(args, currentNode);
+                        outputFile << "Dancer ";
+                        outputFile << updatedDancer.relationNumber;
+                        outputFile << " with priority group ";
+                        outputFile << DancerPriorityGroupToString(updatedDancer.priorityGroup);
+                        outputFile << " was completely unassigned";
+                        outputFile << "\n";
+                    }
+                }
+
+                outputFile << "\n";
+            }
+            else
+            {
+                outputFile << "\n\n";
+            }
+        }
+        else if (decision.type == CycleCancel)
+        {
+            std::string pathString = PathToString(args, path);
+
+            outputFile << "Cancelled cycle over path:\n";
+            outputFile << pathString;
+            outputFile << "\n\n";
+        }
+
+        decisionNumber++;
+    }
+
+    outputFile.close();
 }
 

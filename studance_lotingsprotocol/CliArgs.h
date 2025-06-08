@@ -4,8 +4,10 @@
 
 struct CliArguments
 {
-    bool isTest;
+    bool asText;
     bool displayHelp;
+    bool mcmf;
+    bool lottery;
     std::vector<std::string> unknownArgs;
     std::vector<std::string> parseFailures;
 };

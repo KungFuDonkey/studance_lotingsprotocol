@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <map>
+#include <random>
 
 std::vector<std::string> DancerFileNames()
 {
@@ -346,6 +347,12 @@ std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes)
 
     // close file
     dancersFile.close();
+
+    // Shuffle dancers for random priority assignment
+    // This is basically all the randomness necessary for a fair assignment
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(dancers.begin(), dancers.end(), g);
 
     return dancers;
 }

@@ -12,8 +12,10 @@ CliArguments InitializeCliArgs(int argc, char* argv[])
     }
 
     CliArguments cliArgs;
-    cliArgs.isTest = false;
+    cliArgs.asText = false;
     cliArgs.displayHelp = false;
+    cliArgs.lottery = false;
+    cliArgs.mcmf = false;
     cliArgs.unknownArgs = std::vector<std::string>();
     cliArgs.parseFailures = std::vector<std::string>();
 
@@ -25,14 +27,29 @@ CliArguments InitializeCliArgs(int argc, char* argv[])
 
     for (auto& arg : args)
     {
-        if (arg == "--test" || arg == "-t")
-        {
-            cliArgs.isTest = true;
-        }
-        else if (arg == "--help" || arg == "-h")
+        if (arg == "--help" || arg == "-h")
         {
             cliArgs.displayHelp = true;
         }
+        else if (arg == "--mcmf" || arg == "-m")
+        {
+            cliArgs.mcmf = true;
+        }
+        else if (arg == "--lottery" || arg == "-l")
+        {
+            cliArgs.lottery = true;
+        }
+        else if (arg == "--txt" || arg == "-t")
+        {
+            cliArgs.asText = true;
+        }
+    }
+
+    // auto enable mcmf
+    if (cliArgs.mcmf == cliArgs.lottery && cliArgs.mcmf == false)
+    {
+        cliArgs.mcmf = true;
+        cliArgs.lottery = false;
     }
 
     return cliArgs;
@@ -61,8 +78,10 @@ void DisplayHelp(CliArguments& cliArgs)
         }
     }
 
-    printf("Usage: studance_lotingsprotocol.exe [-h|--help] [-t|--test]\n");
+    printf("Usage: studance_lotingsprotocol.exe [-h|--help] [-t|--txt] [-m|--mcmf|-l|--lottery]\n");
     printf("Command explanation:\n");
-    printf("  [-h|--help]: Display this help dialog\n");
-    printf("  [-t|--test]: Use test data instead of the input data\n");
+    printf("  [-h|--help]    : Display this help dialog\n");
+    printf("  [-t|--txt]     : Ouptut as text file instead of csv\n");
+    printf("  [-m|--mcmf]    : Display this help dialog\n");
+    printf("  [-l|--lottery] : Use test data instead of the input data\n");
 }

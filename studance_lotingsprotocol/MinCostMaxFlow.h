@@ -5,6 +5,20 @@
 #include "Assignment.h"
 #include "CliArgs.h"
 
+enum DecisionType
+{
+    AssignDancer,
+    CycleCancel
+};
+
+struct Decision
+{
+    DecisionType type;
+    int flowChange;
+    int costChange;
+    std::vector<int> changedNodes;
+};
+
 struct MinCostMaxFlowArgs
 {
     int sourceNode;                 // source and sink node indices
@@ -34,6 +48,7 @@ struct MinCostMaxFlowArgs
     // Data of dancers
     const std::vector<Studancer>* dancers;
     const std::vector<DanceClass>* classes;
+    std::vector<Decision> decisions;
 };
 
 std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments& cliArgs);
@@ -41,3 +56,5 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments&
 MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, const std::vector<DanceClass>& classes);
 
 Assignment DecodeMinCostMaxFlow(MinCostMaxFlowArgs& args);
+
+void DumpDecisionLog(const MinCostMaxFlowArgs& args);

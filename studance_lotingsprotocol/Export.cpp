@@ -2,9 +2,11 @@
 #include "Utils.h"
 #include <fstream>
 
-void ExportAsTxt(const Assignment& assignment)
+void ExportAssignmentAsTxt(const Assignment& assignment, const std::string& outputName)
 {
-    std::ofstream outputFile(GetOutputFolder() / "out.txt");
+    std::string outputFileName = outputName + ".txt";
+    auto outputPath = GetOutputFolder() / outputFileName;
+    std::ofstream outputFile(outputPath);
 
     for (auto& classAssignment : assignment)
     {
@@ -17,9 +19,11 @@ void ExportAsTxt(const Assignment& assignment)
     }
 
     outputFile.close();
+
+    printf("Exported to: %ls\n\n", outputPath.c_str());
 }
 
-void ExportAsCsv(const Assignment& assignment)
+void ExportAssignmentAsCsv(const Assignment& assignment, const std::string& outputName)
 {
     // We need to inject a comma for the dance class
     std::string header = GetDancersInputHeader();
@@ -50,7 +54,8 @@ void ExportAsCsv(const Assignment& assignment)
         postTotal += ",";
     }
 
-    auto outputPath = GetOutputFolder() / "out.csv";
+    std::string outputFileName = outputName + ".csv";
+    auto outputPath = GetOutputFolder() / outputFileName;
     std::ofstream outputFile(outputPath);
 
     for (auto& classAssignment : assignment)
@@ -81,10 +86,19 @@ void ExportAsCsv(const Assignment& assignment)
         outputFile << emptyRow << "\n";
     }
 
-    printf("Exported to: %ls\n", outputPath.c_str());
+    outputFile.close();
+
+    printf("Exported to: %ls\n\n", outputPath.c_str());
 }
 
-void ExportAssignment(const Assignment& assignment)
+void ExportAssignment(const Assignment& assignment, const std::string& outputName, const CliArguments& cliArgs)
 {
-    ExportAsCsv(assignment);
+    if (cliArgs.asText)
+    {
+        ExportAssignmentAsTxt(assignment, outputName);
+    }
+    else
+    {
+        ExportAssignmentAsCsv(assignment, outputName);
+    }
 }
