@@ -5,7 +5,7 @@
 #include <fstream>
 #include <sstream>
 
-std::vector<DanceClass> LoadClasses(bool isTest)
+std::vector<DanceClass> LoadClasses()
 {
     std::vector<DanceClass> classes;
 
@@ -17,8 +17,6 @@ std::vector<DanceClass> LoadClasses(bool isTest)
     // find file
     fs::path danceClassFilePath;
     FindInputFile(danceClassFileNames, danceClassFilePath);
-
-    const int numHeaders = 9;
 
     std::map<std::string, int> headerMap;
     headerMap.insert({
@@ -112,6 +110,24 @@ std::vector<DanceClass> LoadClasses(bool isTest)
 
         classes.push_back(danceClass);
     }
+
+    // Create non dancing members special class for members that do not wish to dance
+    DanceClass nonDancingMembers = {};
+    nonDancingMembers.name = "niet-dansend lid";
+    nonDancingMembers.maxSize = 0x7FFFFFFFU; // Near infinity but with space for overflow
+    nonDancingMembers.minSize = 0;
+    nonDancingMembers.additionalSpace = 0;
+
+    classes.push_back(nonDancingMembers);
+
+    // Create an unenrolled class for members that cannot be assigned a dance class
+    DanceClass unenrolledMembers = {};
+    unenrolledMembers.name = "unenrolled";
+    unenrolledMembers.maxSize = 0x7FFFFFFFU; // Near infinity but with space for overflow
+    unenrolledMembers.minSize = 0;
+    unenrolledMembers.additionalSpace = 0;
+
+    classes.push_back(unenrolledMembers);
 
     // close the file
     danceClassFile.close();

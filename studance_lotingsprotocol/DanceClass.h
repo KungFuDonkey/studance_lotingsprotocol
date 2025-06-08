@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "Studancer.h"
 
 struct DanceClass {
     std::string name;
@@ -10,4 +9,4 @@ struct DanceClass {
     int additionalSpace;
 };
 
-std::vector<DanceClass> LoadClasses(bool isTest);
+std::vector<DanceClass> LoadClasses();

@@ -31,7 +31,6 @@ std::string DancerPriorityGroupToString(DancerPriorityGroup group)
     case HalfGapYear: return "HalfGapYear";
     case NonStudying: return "NonStudying";
     case HalfNonStudying: return "HalfNonStudying";
-    case NonDancingMember: return "NonDancingMember";
     default: return "Unkown";
     }
     return "Unkown";
@@ -51,16 +50,24 @@ std::map<std::string, int> GetDancersInputHeaderMap()
 }
 
 // Load all dancers from an input file
-std::vector<Studancer> LoadDancers(bool isTest)
+std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes)
 {
     std::vector<Studancer> dancers;
+
+    // Create array of class names for checking chosen and advised classes
+    std::vector<std::string> classNames;
+    classNames.reserve(classes.size());
+    for (auto danceClass : classes)
+    {
+        classNames.push_back(danceClass.name);
+    }
 
     // possible file names for the dansers file
     std::vector<std::string> dancersFileNames = DancerFileNames();
 
     // possible file names for the board/damn file
     std::vector<std::string> boardFileNames = {
-        "BoardAndDamn.txt"
+        "Board.txt"
     };
 
     // find files
@@ -76,43 +83,16 @@ std::vector<Studancer> LoadDancers(bool isTest)
     std::vector<int> boardMembers;
     std::vector<int> damnMembers;
 
+    // Load numbersx that correspond to board members
     while (std::getline(boardFile, line))
     {
-        tolower(line);
-        bool first = true;
-        if (line._Starts_with("board") || line._Starts_with("bestuur"))
+        std::stringstream lineStream(line);
+        std::string parseLine;
+        while (std::getline(lineStream, parseLine, ','))
         {
-            std::stringstream lineStream(line);
-            std::string parseLine;
-            while (std::getline(lineStream, parseLine, ','))
-            {
-                if (first)
-                {
-                    // remove "Board"
-                    first = false;
-                    continue;
-                }
-                boardMembers.push_back(std::stoi(parseLine));
-            }
-        }
-        else if (line._Starts_with("damn"))
-        {
-            std::stringstream lineStream(line);
-            std::string parseLine;
-            while (std::getline(lineStream, parseLine, ','))
-            {
-                if (first)
-                {
-                    // remove "Damn"
-                    first = false;
-                    continue;
-                }
-                damnMembers.push_back(std::stoi(parseLine));
-            }
+            boardMembers.push_back(std::stoi(parseLine));
         }
     }
-
-    const int numHeaders = 9;
 
     // open the dancers file
     std::ifstream dancersFile(dancersFilePath);
@@ -198,6 +178,10 @@ std::vector<Studancer> LoadDancers(bool isTest)
         // Store the input row for export
         dancer.tableRow = line;
 
+        std::string relationNumber = indices[inputHeaderMap["relatienummer"]];
+        trim(relationNumber);
+        dancer.relationNumber = std::stoi(relationNumber);
+
         std::string studentStatus = indices[inputHeaderMap["studentstatus"]];
         trim(studentStatus);
         tolower(studentStatus);
@@ -233,18 +217,36 @@ std::vector<Studancer> LoadDancers(bool isTest)
         trim(thirdChoice);
         tolower(thirdChoice);
 
-        bool isNonDancingMemberThisYear = false;
-        if (firstChoice == "niet-dansend lid")
-        {
-            isNonDancingMemberThisYear = true;
-        }
-        else
-        {
-            dancer.chosenClasses.push_back(firstChoice);
+        dancer.chosenClasses.push_back(firstChoice);
 
-            dancer.chosenClasses.push_back(secondChoice);
+        dancer.chosenClasses.push_back(secondChoice);
 
-            dancer.chosenClasses.push_back(thirdChoice);
+        dancer.chosenClasses.push_back(thirdChoice);
+
+        dancer.chosenClasses.push_back("unenrolled");
+
+        // check and sanitize choices
+        for (int i = 0; i < dancer.chosenClasses.size(); i++)
+        {
+            // sanitize empty choices
+            if (dancer.chosenClasses[i] == "maak een keuze")
+            {
+                dancer.chosenClasses[i] = "";
+            }
+
+            // We do not need to check emtpy choices
+            if (dancer.chosenClasses[i] == "")
+            {
+                continue;
+            }
+
+            // Check if we have the chosen class in the list. Otherwise we have an input issue
+            if (!contains(classNames, dancer.chosenClasses[i]))
+            {
+                printf("ERROR: Chosen class %s for dancer %s does not exist in the input classes file\n", dancer.chosenClasses[i].c_str(), relationNumber.c_str());
+                printf("Aborting...\n");
+                exit(-1);
+            }
         }
 
         std::string advice = indices[inputHeaderMap["advies"]];
@@ -274,19 +276,10 @@ std::vector<Studancer> LoadDancers(bool isTest)
         tolower(requestedMembership);
         bool halfYearMemberShip = requestedMembership == "halfjaarlijkslidmaatschap";
 
-        std::string relationNumber = indices[inputHeaderMap["relatienummer"]];
-        trim(relationNumber);
-
-        dancer.relationNumber = std::stoi(relationNumber);
-
         bool isBoard = contains(boardMembers, dancer.relationNumber);
         bool isDamn = contains(damnMembers, dancer.relationNumber);
 
-        if (isNonDancingMemberThisYear)
-        {
-            dancer.priorityGroup = NonDancingMember;
-        }
-        else if (isBoard)
+        if (isBoard)
         {
             dancer.priorityGroup = Board;
         }

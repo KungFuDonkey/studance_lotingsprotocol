@@ -41,126 +41,208 @@ inline void DumpBuffer(MinCostMaxFlowArgs& args)
     output.close();
 }
 
+enum NodeType
+{
+    Source,
+    Sink,
+    Dancer,
+    Class,
+    ClassCost,
+    Unknown
+};
+
+inline NodeType GetNodeType(MinCostMaxFlowArgs& args, int node)
+{
+    if (node == 0)
+    {
+        return Source;
+    }
+    else if (node >= args.dancerOffset && node < args.classOffset)
+    {
+        return Dancer;
+    }
+    else if (node >= args.classOffset && node < args.classCostOffset)
+    {
+        return Class;
+    }
+    else if (node >= args.classCostOffset && node < args.sinkNode)
+    {
+        return ClassCost;
+    }
+    else if (node == args.sinkNode)
+    {
+        return Sink;
+    }
+    else
+    {
+        return Unknown;
+    }
+}
+
+inline std::string GetNodeName(MinCostMaxFlowArgs& args, int node)
+{
+    NodeType nodeType = GetNodeType(args, node);
+    if (nodeType == Source)
+    {
+        return "Source";
+    }
+    else if (nodeType == Dancer)
+    {
+        return std::to_string(args.dancers->operator[](node - args.dancerOffset).relationNumber);
+    }
+    else if (nodeType == Class)
+    {
+        return args.classes->operator[](node - args.classOffset).name;
+    }
+    else if (nodeType == ClassCost)
+    {
+        int classId = (node - args.classCostOffset) / 3;
+        int costId = (node - args.classCostOffset) % 3;
+        std::string className = args.classes->operator[](classId).name;
+        std::string costName = costId == 0 ? "Min Cost" : costId == 1 ? "Standard Cost" : "Additional Cost";
+        return className + " " + costName;
+    }
+    else if (nodeType == Sink)
+    {
+        return "Sink";
+    }
+    else
+    {
+        return "Out of bounds";
+    }
+}
+
+inline const Studancer& GetDancerFromNode(MinCostMaxFlowArgs& args, int node)
+{
+    NodeType nodeType = GetNodeType(args, node);
+    if (nodeType != Dancer)
+    {
+        printf("ERROR: Bad node type for GetDancerFromNode()");
+        exit(-1);
+    }
+    return args.dancers->operator[](node - args.dancerOffset);
+}
+
 // inline functions for bidirectional accesses
-inline int distance(MinCostMaxFlowArgs& args, int u)
+inline int GetDistance(MinCostMaxFlowArgs& args, int u)
 {
     if (u >= args.numNodes)
     {
-        printf("Out of range exception in distance");
+        printf("ERROR: Out of range exception in GetDistance");
         DumpBuffer(args);
         exit(-1);
     }
     return args.distance[u];
 }
-inline void setdistance(MinCostMaxFlowArgs& args, int u, int value)
+inline void SetDistance(MinCostMaxFlowArgs& args, int u, int value)
 {
     if (u >= args.numNodes)
     {
-        printf("Out of range exception in setdistance");
+        printf("Out of range exception in SetDistance");
         DumpBuffer(args);
         exit(-1);
     }
     args.distance[u] = value;
 }
-inline int parent(MinCostMaxFlowArgs& args, int u)
+inline int GetParent(MinCostMaxFlowArgs& args, int u)
 {
     if (u >= args.numNodes)
     {
-        printf("Out of range exception in parent");
+        printf("Out of range exception in GetParent");
         DumpBuffer(args);
         exit(-1);
     }
     return args.parent[u];
 }
-inline void setparent(MinCostMaxFlowArgs& args, int u, int value)
+inline void SetParent(MinCostMaxFlowArgs& args, int u, int value)
 {
     if (u >= args.numNodes)
     {
-        printf("Out of range exception in parent");
+        printf("Out of range exception in SetParent");
         DumpBuffer(args);
         exit(-1);
     }
     args.parent[u] = value;
 }
-inline int flow(MinCostMaxFlowArgs& args, int u, int v)
+inline int GetFlow(MinCostMaxFlowArgs& args, int u, int v)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
-        printf("Out of range exception in flow");
+        printf("Out of range exception in GetFlow");
         DumpBuffer(args);
         exit(-1);
     }
     return args.flow[u * args.numNodes + v];
 }
-inline void setflow(MinCostMaxFlowArgs& args, int u, int v, int value)
+inline void SetFlow(MinCostMaxFlowArgs& args, int u, int v, int value)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
-        printf("Out of range exception in setflow");
+        printf("Out of range exception in SetFlow");
         DumpBuffer(args);
         exit(-1);
     }
     args.flow[u * args.numNodes + v] = value;
 }
-inline void addflow(MinCostMaxFlowArgs& args, int u, int v, int value)
+inline void AddFlow(MinCostMaxFlowArgs& args, int u, int v, int value)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
-        printf("Out of range exception in addflow");
+        printf("Out of range exception in AddFlow");
         DumpBuffer(args);
         exit(-1);
     }
     args.flow[u * args.numNodes + v] += value;
 }
-inline int cost(MinCostMaxFlowArgs& args, int u, int v)
+inline int GetCost(MinCostMaxFlowArgs& args, int u, int v)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
-        printf("Out of range exception in cost");
+        printf("Out of range exception in GetCost");
         DumpBuffer(args);
         exit(-1);
     }
     return args.cost[u * args.numNodes + v];
 }
-inline void setcost(MinCostMaxFlowArgs& args, int u, int v, int value)
+inline void SetCost(MinCostMaxFlowArgs& args, int u, int v, int value)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
-        printf("Out of range exception in setcost");
+        printf("Out of range exception in SetCost");
         DumpBuffer(args);
         exit(-1);
     }
     args.cost[u * args.numNodes + v] = value;
 }
-inline int capacity(MinCostMaxFlowArgs& args, int u, int v)
+inline int GetCapacity(MinCostMaxFlowArgs& args, int u, int v)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
-        printf("Out of range exception in capacity");
+        printf("Out of range exception in GetCapacity");
         DumpBuffer(args);
         exit(-1);
     }
     return args.capacity[u * args.numNodes + v];
 }
-inline void setcapacity(MinCostMaxFlowArgs& args, int u, int v, int value)
+inline void SetCapacity(MinCostMaxFlowArgs& args, int u, int v, int value)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
-        printf("Out of range exception in setcapacity");
+        printf("Out of range exception in SetCapacity");
         DumpBuffer(args);
         exit(-1);
     }
     args.capacity[u * args.numNodes + v] = value;
 }
-inline int canflow(MinCostMaxFlowArgs& args, int u, int v)
+inline int CanFlow(MinCostMaxFlowArgs& args, int u, int v)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
-        printf("Out of range exception in canflow");
+        printf("Out of range exception in CanFlow");
         DumpBuffer(args);
         exit(-1);
     }
-    return flow(args, u, v) < capacity(args, u, v);
+    return GetFlow(args, u, v) < GetCapacity(args, u, v);
 }
 inline void InitArray(int* array, int value, int numElements)
 {
@@ -177,7 +259,7 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
     InitArray(args.parent, -1, args.numNodes);
 
     // set distance to source node to 0
-    setdistance(args, args.sourceNode, 0);
+    SetDistance(args, args.sourceNode, 0);
 
     bool hadUpdate = false;
 
@@ -188,7 +270,7 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
         for (int currentNode = 0; currentNode < args.numNodes; currentNode++)
         {
             // Skip node if we don't know how to reach it yet
-            const int currentDistance = distance(args, currentNode);
+            const int currentDistance = GetDistance(args, currentNode);
             if (currentDistance == INF)
             {
                 continue;
@@ -198,27 +280,27 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
             for (int neighbour : args.adjecencyList[currentNode])
             {
                 // See if we can relax flow if we can go there
-                if (canflow(args, currentNode, neighbour))
+                if (CanFlow(args, currentNode, neighbour))
                 {
                     // if the distance is smaller update the distances and the parent
-                    const int newDistance = currentDistance + cost(args, currentNode, neighbour);
-                    if (newDistance < distance(args, neighbour))
+                    const int newDistance = currentDistance + GetCost(args, currentNode, neighbour);
+                    if (newDistance < GetDistance(args, neighbour))
                     {
-                        setdistance(args, neighbour, newDistance);
-                        setparent(args, neighbour, currentNode);
+                        SetDistance(args, neighbour, newDistance);
+                        SetParent(args, neighbour, currentNode);
                         hadUpdate = true;
                     }
                 }
 
                 // See if we can relax flow if we can go there via the residual graph
                 // (it is then flowing to the current node and we can cancel the flow)
-                if (flow(args, neighbour, currentNode) > 0)
+                if (GetFlow(args, neighbour, currentNode) > 0)
                 {
-                    const int newDistance = currentDistance - cost(args, currentNode, neighbour);
-                    if (newDistance < distance(args, neighbour))
+                    const int newDistance = currentDistance - GetCost(args, currentNode, neighbour);
+                    if (newDistance < GetDistance(args, neighbour))
                     {
-                        setdistance(args, neighbour, newDistance);
-                        setparent(args, neighbour, currentNode);
+                        SetDistance(args, neighbour, newDistance);
+                        SetParent(args, neighbour, currentNode);
                         hadUpdate = true;
                     }
                 }
@@ -228,7 +310,7 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
         if (!hadUpdate)
         {
             // we found the optimal solution so quit, also do not need to check for cycles
-            return std::make_pair(distance(args, args.sinkNode), args.sinkNode);
+            return std::make_pair(GetDistance(args, args.sinkNode), args.sinkNode);
         }
     }
 
@@ -238,7 +320,7 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
     for (int currentNode = 0; currentNode < args.numNodes; currentNode++)
     {
         // Skip node if we don't know how to reach it yet
-        const int currentDistance = distance(args, currentNode);
+        const int currentDistance = GetDistance(args, currentNode);
         if (currentDistance == INF)
         {
             continue;
@@ -249,19 +331,19 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
         {
             // find cicles in the normal and residual graph
             bool foundCycle = false;
-            if (canflow(args, currentNode, neighbour))
+            if (CanFlow(args, currentNode, neighbour))
             {
-                const int newDistance = currentDistance + cost(args, currentNode, neighbour);
-                if (newDistance < distance(args, neighbour))
+                const int newDistance = currentDistance + GetCost(args, currentNode, neighbour);
+                if (newDistance < GetDistance(args, neighbour))
                 {
                     foundCycle = true;
                 }
             }
 
-            if (flow(args, neighbour, currentNode) > 0)
+            if (GetFlow(args, neighbour, currentNode) > 0)
             {
-                const int newDistance = currentDistance - cost(args, currentNode, neighbour);
-                if (newDistance < distance(args, neighbour))
+                const int newDistance = currentDistance - GetCost(args, currentNode, neighbour);
+                if (newDistance < GetDistance(args, neighbour))
                 {
                     foundCycle = true;
                 }
@@ -272,13 +354,13 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
                 // We found a negative cycle, now just find the cycle
                 std::vector<int> seenNodes;
                 seenNodes.push_back(currentNode);
-                int currentParent = parent(args, currentNode);
+                int currentParent = GetParent(args, currentNode);
 
                 while (!contains(seenNodes, currentParent))
                 {
                     seenNodes.push_back(currentParent);
                     currentNode = currentParent;
-                    currentParent = parent(args, currentNode);
+                    currentParent = GetParent(args, currentNode);
                 }
 
                 // Negative infinitiy for negative cycle
@@ -289,10 +371,10 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
     }
 
     // Return sink node on success
-    return std::make_pair(distance(args, args.sinkNode), args.sinkNode);
+    return std::make_pair(GetDistance(args, args.sinkNode), args.sinkNode);
 }
 
-std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const std::vector<Studancer>& dancers, const std::vector<DanceClass>& classes, const CliArguments& cliArgs) {
+std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments& cliArgs) {
 
     int minCost = 0, maxFlow = 0;
 
@@ -311,20 +393,20 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const std::vector<S
             int currentNode = args.sinkNode;
             while (currentNode != args.sourceNode)
             {
-                int p = parent(args, currentNode);
+                int p = GetParent(args, currentNode);
 
                 // Update flow in both the normal and residual graph
-                if (capacity(args, p, currentNode) > 0)
+                if (GetCapacity(args, p, currentNode) > 0)
                 {
                     // normal graph
-                    addflow(args, p, currentNode, 1);
-                    minCost += cost(args, p, currentNode);
+                    AddFlow(args, p, currentNode, 1);
+                    minCost += GetCost(args, p, currentNode);
                 }
                 else
                 {
                     // residual graph
-                    addflow(args, currentNode, p, -1);
-                    minCost -= cost(args, p, currentNode);
+                    AddFlow(args, currentNode, p, -1);
+                    minCost -= GetCost(args, p, currentNode);
                 }
 
                 currentNode = p;
@@ -339,17 +421,17 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const std::vector<S
 
                     for (int neighbour : args.adjecencyList[node])
                     {
-                        incomming += flow(args, neighbour, node);
-                        outgoing += flow(args, node, neighbour);
+                        incomming += GetFlow(args, neighbour, node);
+                        outgoing += GetFlow(args, node, neighbour);
 
-                        if (flow(args, neighbour, node) < 0)
+                        if (GetFlow(args, neighbour, node) < 0)
                         {
                             printf("\nFailed flow conservation: Negative incomming in node %i\n", node);
                             DumpBuffer(args);
                             exit(-1);
                         }
 
-                        if (flow(args, node, neighbour) < 0)
+                        if (GetFlow(args, node, neighbour) < 0)
                         {
                             printf("\nFailed flow conservation: Negative outgoing in node %i\n", node);
                             DumpBuffer(args);
@@ -364,7 +446,7 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const std::vector<S
                         currentNode = args.sinkNode;
                         while (currentNode != args.sourceNode)
                         {
-                            int p = parent(args, currentNode);
+                            int p = GetParent(args, currentNode);
                             printf("%i ", currentNode);
                             currentNode = p;
                         }
@@ -388,13 +470,13 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const std::vector<S
             int currentNode = bfOutput.second;
             std::vector<int> seenNodes;
             seenNodes.push_back(currentNode);
-            int currentParent = parent(args, currentNode);
+            int currentParent = GetParent(args, currentNode);
 
             while (!contains(seenNodes, currentParent))
             {
                 seenNodes.push_back(currentParent);
                 currentNode = currentParent;
-                currentParent = parent(args, currentNode);
+                currentParent = GetParent(args, currentNode);
             }
 
             printf("\n");
@@ -500,8 +582,8 @@ void MakeEdge(MinCostMaxFlowArgs& args, int u, int v, int c, int cap)
 {
     // forward
     args.adjecencyList[u].push_back(v);
-    setcapacity(args, u, v, cap);
-    setcost(args, u, v, c);
+    SetCapacity(args, u, v, cap);
+    SetCost(args, u, v, c);
 
     // residual
     args.adjecencyList[v].push_back(u);
@@ -516,9 +598,7 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
     numNodes += (int)dancers.size();
 
     // second layer, all classes + 1 chosen unenrollment class + 1 unenrolled class
-    numNodes += (int)classes.size() + 2;
-    int chosenUnenrollmentNode = numNodes - 2;
-    int unenrollmentNode = numNodes - 1;
+    numNodes += (int)classes.size();
 
     // third layer, classes no cost, classes bit of cost, classes extra space cost
     numNodes += (int)classes.size();
@@ -539,11 +619,14 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
     }
 
     // 0 is sourceNode
-    int dancerOffset = 1;
-    int classOffset = dancerOffset + (int)dancers.size();
-    int classCostsOffset = classOffset + (int)classes.size() + 2;
-    int sinkNode = (int)numNodes - 1;
+    args.sourceNode = 0;
+    args.dancerOffset = 1;
+    args.classOffset = args.dancerOffset + (int)dancers.size();
+    args.classCostOffset = args.classOffset + (int)classes.size();
+    args.sinkNode = (int)numNodes - 1;
     args.expectedMaxFlow = 0;
+    args.dancers = &dancers;
+    args.classes = &classes;
 
     // Encode dancers (edges of sink to dancers, and dancers to classes)
     for (int i = 0; i < dancers.size(); i++)
@@ -552,47 +635,44 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
         const Studancer& dancer = dancers[i];
 
         // node for this dancer
-        int dancerNodeIndex = dancerOffset + i;
+        int dancerNodeIndex = args.dancerOffset + i;
 
-        if (dancer.priorityGroup == NonDancingMember)
+        // Different types of dancers have different types of cost
+        int dancerCost = GetCostForDancer(dancer);
+        int unenrolledCost = GetUnenrollmentCostForDancer(dancer);
+        // Board members can assign 2 classes
+        int numDanceClassesToChoose = dancer.priorityGroup == Board ? 2 : 1;
+        args.expectedMaxFlow += numDanceClassesToChoose;
+
+        MakeEdge(args, 0, dancerNodeIndex, dancerCost, numDanceClassesToChoose);
+
+        // encode choices
+        for (int j = 0; j < dancer.chosenClasses.size(); j++)
         {
-            // no cost for non dancing members
-            MakeEdge(args, 0, dancerNodeIndex, 0, 1);
-            MakeEdge(args, dancerNodeIndex, chosenUnenrollmentNode, 0, 1);
-            args.expectedMaxFlow += 1;
-        }
-        else
-        {
-            // Different types of dancers have different types of cost
-            int dancerCost = GetCostForDancer(dancer);
-            int unenrolledCost = GetUnenrollmentCostForDancer(dancer);
-            // Board members can assign 2 classes
-            int numDanceClassesToChoose = dancer.priorityGroup == Board ? 2 : 1;
-            args.expectedMaxFlow += numDanceClassesToChoose;
-
-            MakeEdge(args, 0, dancerNodeIndex, dancerCost, numDanceClassesToChoose);
-
-            // encode choices
-            for (int j = 0; j < dancer.chosenClasses.size(); j++)
+            if (dancer.chosenClasses[j] == "")
             {
-                if (dancer.chosenClasses[j] == "" || dancer.chosenClasses[j] == "maak een keuze")
-                {
-                    continue;
-                }
-                const std::string& chosenClass = dancer.chosenClasses[j];
+                continue;
+            }
+            const std::string& chosenClass = dancer.chosenClasses[j];
+            int classNodeIndex = classMap[chosenClass] + args.classOffset;
+
+            if (chosenClass == "unenrolled")
+            {
+                // special cost for unenrollmlent
+                MakeEdge(args, dancerNodeIndex, classNodeIndex, unenrolledCost, 1);
+            }
+            else
+            {
                 bool wasAdvised = contains(dancer.advisedClasses, chosenClass);
 
                 // 3 -> 7 -> 11
                 int classCost = j + (j + 1) * choiceCost;
                 classCost -= wasAdvised ? additionalAdviceCost : 0;
 
-                int classNodeIndex = classMap[chosenClass] + classOffset;
-
                 // can only choose class once
                 MakeEdge(args, dancerNodeIndex, classNodeIndex, classCost, 1);
             }
 
-            MakeEdge(args, dancerNodeIndex, unenrollmentNode, unenrolledCost, 1);
         }
     }
 
@@ -601,33 +681,153 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
     {
         const DanceClass& danceClass = classes[i];
 
-        int classNodeIndex = classMap[danceClass.name] + classOffset;
+        int classNodeIndex = classMap[danceClass.name] + args.classOffset;
 
-        int classNodeCostIndex = i * 3 + classCostsOffset;
+        int classNodeCostIndex = i * 3 + args.classCostOffset;
 
         MakeEdge(args, classNodeIndex, classNodeCostIndex    , underMinBoundsCost     , danceClass.minSize);
         MakeEdge(args, classNodeIndex, classNodeCostIndex + 1, isWithinClassBoundsCost, danceClass.maxSize - danceClass.minSize);
         MakeEdge(args, classNodeIndex, classNodeCostIndex + 2, useAdditionalSpaceCost , danceClass.additionalSpace);
 
         // We set cost and capacity to 0 as that was already calculated in the last edge
-        MakeEdge(args, classNodeCostIndex, sinkNode, 0, INF);
-        MakeEdge(args, classNodeCostIndex + 1, sinkNode, 0, INF);
-        MakeEdge(args, classNodeCostIndex + 2, sinkNode, 0, INF);
+        MakeEdge(args, classNodeCostIndex, args.sinkNode, 0, INF);
+        MakeEdge(args, classNodeCostIndex + 1, args.sinkNode, 0, INF);
+        MakeEdge(args, classNodeCostIndex + 2, args.sinkNode, 0, INF);
     }
 
-    MakeEdge(args, chosenUnenrollmentNode, args.sinkNode, 0, INF);
-    MakeEdge(args, unenrollmentNode, args.sinkNode, 0, INF);
+    // Check the encoding
+    // Source node only links to dansers
+    for (int i = 0; i < args.numNodes; i++)
+    {
+        NodeType type = GetNodeType(args, i);
+
+        if (type == Dancer)
+        {
+            if (GetCapacity(args, args.sourceNode, i) == 0)
+            {
+                printf("ERROR: source node not connected to dancer %s\n", GetNodeName(args, i).c_str());
+                exit(-1);
+            }
+        }
+        else
+        {
+            if (GetCapacity(args, args.sourceNode, i) != 0)
+            {
+                printf("ERROR: source node was connected to a non dancer node named %s\n", GetNodeName(args, i).c_str());
+                exit(-1);
+            }
+        }
+    }
+
+    // Dancer nodes only have link to chosen classes
+    for (int i = 0; i < dancers.size(); i++)
+    {
+        int dancerIndex = args.dancerOffset + i;
+        const Studancer& dancer = GetDancerFromNode(args, dancerIndex);
+
+        // Check all connections
+        for (int j = 0; j < args.numNodes; j++)
+        {
+            if (GetCapacity(args, dancerIndex, j) > 0)
+            {
+                // if there is a link it MUST be a class and in the chosen list of the dancer
+                NodeType nodeType = GetNodeType(args, j);
+                std::string nodeName = GetNodeName(args, j).c_str();
+                if (nodeType != Class)
+                {
+                    printf("ERROR: dancer node %s was connected to a non class node named %s\n", GetNodeName(args, i).c_str(), nodeName.c_str());
+                    exit(-1);
+                }
+                if (!contains(dancer.chosenClasses, nodeName))
+                {
+                    printf("ERROR: dancer %s did not choose node %s but it has been connected\n", GetNodeName(args, i).c_str(), nodeName.c_str());
+                    exit(-1);
+                }
+            }
+        }
+
+        // Check chosen connections specifically
+        for (auto& chosenClass : dancer.chosenClasses)
+        {
+            if (chosenClass == "")
+            {
+                continue;
+            }
+            int classIndex = args.classOffset + classMap[chosenClass];
+            std::string className = GetNodeName(args, classIndex).c_str();
+
+            if (GetCapacity(args, dancerIndex, classIndex) == 0)
+            {
+                printf("ERROR: dancer %s was not connected to class %s while it was chosen by the dancer\n", GetNodeName(args, i).c_str(), className.c_str());
+                exit(-1);
+            }
+        }
+    }
+
+    // Class nodes only have connections to class cost nodes
+    for (int i = 0; i < classes.size(); i++)
+    {
+        int classIndex = args.classOffset + i;
+
+        for (int j = 0; j < args.numNodes; j++)
+        {
+            if (GetCapacity(args, classIndex, j) > 0)
+            {
+                // if there is a link it MUST be a class cost node of this class
+                NodeType nodeType = GetNodeType(args, j);
+                std::string nodeName = GetNodeName(args, j).c_str();
+                if (nodeType != ClassCost)
+                {
+                    printf("ERROR: class node %s was connected to a non class cost node named %s\n", GetNodeName(args, i).c_str(), nodeName.c_str());
+                    exit(-1);
+                }
+
+                // Check if the connection was made to the correct node
+                int classCostIndex = j - args.classCostOffset;
+                int checkClassIndex = classCostIndex / 3;
+                if (i != checkClassIndex)
+                {
+                    printf("ERROR: class node %s was connected to a class cost node named %s but the index does not match\n", GetNodeName(args, i).c_str(), nodeName.c_str());
+                    exit(-1);
+                }
+            }
+        }
+    }
+
+    // Class cost nodes only have connections to the sink node
+    for (int i = 0; i < classes.size() * 3; i++)
+    {
+        int classCostIndex = args.classCostOffset + i;
+
+        for (int j = 0; j < args.numNodes; j++)
+        {
+            if (GetCapacity(args, classCostIndex, j) > 0)
+            {
+                // if there is a link it MUST be the sink node
+                NodeType nodeType = GetNodeType(args, j);
+                std::string nodeName = GetNodeName(args, j).c_str();
+                if (nodeType != Sink)
+                {
+                    printf("ERROR: class cost node %s was connected to a node named %s\n", GetNodeName(args, i).c_str(), nodeName.c_str());
+                    exit(-1);
+                }
+            }
+        }
+    }
 
     return args;
 }
 
-Assignment DecodeMinCostMaxFlow(MinCostMaxFlowArgs& args, const std::vector<Studancer>& dancers, const std::vector<DanceClass>& classes)
+Assignment DecodeMinCostMaxFlow(MinCostMaxFlowArgs& args)
 {
     Assignment assignment;
 
+    const std::vector<Studancer>& dancers = *args.dancers;
+    const std::vector<DanceClass>& classes = *args.classes;
+
     int dancerOffset = 1;
     int classOffset = dancerOffset + (int)dancers.size();
-    int classCostsOffset = classOffset + (int)classes.size() + 2;
+    int classCostsOffset = classOffset + (int)classes.size();
 
     for (int i = 0; i < classes.size(); i++)
     {
@@ -639,7 +839,7 @@ Assignment DecodeMinCostMaxFlow(MinCostMaxFlowArgs& args, const std::vector<Stud
         for (int neighbour : args.adjecencyList[classNodeIndex])
         {
             // If there is flow from a dancer to this class, this class was chosen
-            if (neighbour >= dancerOffset && neighbour < classOffset && !canflow(args, neighbour, classNodeIndex))
+            if (neighbour >= dancerOffset && neighbour < classOffset && !CanFlow(args, neighbour, classNodeIndex))
             {
                 int dancerIndex = neighbour - dancerOffset;
                 assignedDancers.push_back(dancers[dancerIndex]);
@@ -648,40 +848,6 @@ Assignment DecodeMinCostMaxFlow(MinCostMaxFlowArgs& args, const std::vector<Stud
 
         assignment.push_back(std::make_pair(danceClass, assignedDancers));
     }
-
-    int chosenUnenrollmentNode = classCostsOffset - 2;
-    DanceClass nonDancingMembersClass = {};
-    nonDancingMembersClass.name = "niet-dansende leden";
-    std::vector<Studancer> nonDancingMembers;
-
-    for (int neighbour : args.adjecencyList[chosenUnenrollmentNode])
-    {
-        // If there is flow from a dancer to this class, this class was chosen
-        if (neighbour >= dancerOffset && neighbour < classOffset && !canflow(args, neighbour, chosenUnenrollmentNode))
-        {
-            int dancerIndex = neighbour - dancerOffset;
-            nonDancingMembers.push_back(dancers[dancerIndex]);
-        }
-    }
-
-    assignment.push_back(std::make_pair(nonDancingMembersClass, nonDancingMembers));
-
-    int unenrolledNode = classCostsOffset - 1;
-    DanceClass unenrolledClass = {};
-    unenrolledClass.name = "uitgeloot";
-    std::vector<Studancer> unenrolledMembers;
-
-    for (int neighbour : args.adjecencyList[unenrolledNode])
-    {
-        // If there is flow from a dancer to this class, this class was chosen
-        if (neighbour >= dancerOffset && neighbour < classOffset && !canflow(args, neighbour, unenrolledNode))
-        {
-            int dancerIndex = neighbour - dancerOffset;
-            unenrolledMembers.push_back(dancers[dancerIndex]);
-        }
-    }
-
-    assignment.push_back(std::make_pair(unenrolledClass, unenrolledMembers));
 
     return assignment;
 }

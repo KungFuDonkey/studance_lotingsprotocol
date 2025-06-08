@@ -17,20 +17,20 @@ int main(int argc, char* argv[])
         return ParseSuccess(cliArgs) ? 0 : -1;
     }
 
-    // Load all dancers
-    std::vector<Studancer> dancers = LoadDancers(cliArgs.isTest);
-
     // Load classes
-    std::vector<DanceClass> classes = LoadClasses(cliArgs.isTest);
+    std::vector<DanceClass> classes = LoadClasses();
+
+    // Load all dancers
+    std::vector<Studancer> dancers = LoadDancers(classes);
 
     // Encode the mincost maxflow problem
     MinCostMaxFlowArgs mcmf = EncodeMinCostMaxFlow(dancers, classes);
 
     // Solve min cost max flow
-    auto result = MinCostMaxFlow(mcmf, dancers, classes, cliArgs);
+    auto result = MinCostMaxFlow(mcmf, cliArgs);
 
     // Retrieve solution1
-    Assignment assignment = DecodeMinCostMaxFlow(mcmf, dancers, classes);
+    Assignment assignment = DecodeMinCostMaxFlow(mcmf);
 
     // Export solution
     ExportAssignment(assignment);

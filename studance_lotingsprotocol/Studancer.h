@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include "DanceClass.h"
 
 enum DancerPriorityGroup
 {
@@ -17,7 +18,6 @@ enum DancerPriorityGroup
     HalfGapYear,
     NonStudying,
     HalfNonStudying,
-    NonDancingMember,
     Count
 };
 
@@ -38,4 +38,4 @@ std::string GetDancersInputHeader();
 
 std::map<std::string, int> GetDancersInputHeaderMap();
 
-std::vector<Studancer> LoadDancers(bool isTest);
+std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes);
