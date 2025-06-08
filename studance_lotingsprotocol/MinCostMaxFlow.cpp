@@ -51,6 +51,21 @@ enum NodeType
     Unknown
 };
 
+inline std::string NodeTypeToString(NodeType nodeType)
+{
+    switch (nodeType)
+    {
+    case Source: return "Source";
+    case Sink: return "Sink";
+    case Dancer: return "Dancer";
+    case Class: return "Class";
+    case ClassCost: return "ClassCost";
+    case Unknown: return "Unknown";
+    default: return "Unkown";
+    }
+    return "Unkown";
+}
+
 inline NodeType GetNodeType(MinCostMaxFlowArgs& args, int node)
 {
     if (node == 0)
@@ -426,14 +441,20 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments&
 
                         if (GetFlow(args, neighbour, node) < 0)
                         {
-                            printf("\nFailed flow conservation: Negative incomming in node %i\n", node);
+                            NodeType nodeType = GetNodeType(args, node);
+                            std::string nodeTypeName = NodeTypeToString(nodeType);
+                            std::string nodeName = GetNodeName(args, node);
+                            printf("\nFailed flow conservation: Negative incomming for node %i with NodeType %s and Name %s\n", node, nodeTypeName.c_str(), nodeName.c_str());
                             DumpBuffer(args);
                             exit(-1);
                         }
 
                         if (GetFlow(args, node, neighbour) < 0)
                         {
-                            printf("\nFailed flow conservation: Negative outgoing in node %i\n", node);
+                            NodeType nodeType = GetNodeType(args, node);
+                            std::string nodeTypeName = NodeTypeToString(nodeType);
+                            std::string nodeName = GetNodeName(args, node);
+                            printf("\nFailed flow conservation: Negative outgoing for node %i with NodeType %s and Name %s\n", node, nodeTypeName.c_str(), nodeName.c_str());
                             DumpBuffer(args);
                             exit(-1);
                         }
@@ -441,17 +462,33 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments&
 
                     if (incomming != outgoing)
                     {
-                        printf("\nFailed flow conservation in node %i after updating path:\n", node);
+                        NodeType nodeType = GetNodeType(args, node);
+                        std::string nodeTypeName = NodeTypeToString(nodeType);
+                        std::string nodeName = GetNodeName(args, node);
+
+                        printf("\nFailed flow conservation for node %i with NodeType %s and Name %s after updating path:\n", node, nodeTypeName.c_str(), nodeName.c_str());
 
                         currentNode = args.sinkNode;
+                        NodeType currentNodeType = GetNodeType(args, currentNode);
+                        std::string currentNodeTypeName = NodeTypeToString(currentNodeType);
+                        std::string currentNodeName = GetNodeName(args, currentNode);
+
+                        int prevNode = 0;
+
                         while (currentNode != args.sourceNode)
                         {
                             int p = GetParent(args, currentNode);
-                            printf("%i ", currentNode);
-                            currentNode = p;
-                        }
-                        printf("%i\n", currentNode);
 
+                            printf("%i (type: %s, name: %s)\n", currentNode, currentNodeTypeName.c_str(), currentNodeName.c_str());
+                            prevNode = currentNode;
+                            currentNode = p;
+                            currentNodeType = GetNodeType(args, currentNode);
+                            currentNodeTypeName = NodeTypeToString(currentNodeType);
+                            currentNodeName = GetNodeName(args, currentNode);
+                        }
+                        printf("%i (type: %s, name: %s)\n", currentNode, currentNodeTypeName.c_str(), currentNodeName.c_str());
+
+                        printf("incomming: %i, outgoing: %i", incomming, outgoing);
 
                         DumpBuffer(args);
                         exit(-1);

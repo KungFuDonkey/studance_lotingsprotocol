@@ -234,6 +234,15 @@ std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes)
                 dancer.chosenClasses[i] = "";
             }
 
+            // If we have the same choice as before, set it to empty
+            for (int j = 0; j < i; j++)
+            {
+                if (dancer.chosenClasses[i] == dancer.chosenClasses[j])
+                {
+                    dancer.chosenClasses[i] = "";
+                }
+            }
+
             // We do not need to check emtpy choices
             if (dancer.chosenClasses[i] == "")
             {
