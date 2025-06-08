@@ -7,6 +7,7 @@
 #include <map>
 #include <fstream>
 #include <filesystem>
+#include <chrono>
 
 #define MAXN 1000
 
@@ -415,6 +416,8 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments&
     // first stores distance, second stores node
     std::pair<int, int> bfOutput = BellmanFord(args);
 
+    std::chrono::system_clock::time_point start = {};
+
     printf("Assigned:\n");
     while (bfOutput.first < INF) {
 
@@ -516,8 +519,15 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments&
             decision.flowChange += 1;
             decision.costChange += (minCost - initialCost);
             maxFlow++;
-            float percentageAssigned = ((float)maxFlow / (float)args.expectedMaxFlow) * 100.f;
-            printf("\r%.2f%%", percentageAssigned);
+
+            // update terminal every so often
+            auto duration = std::chrono::system_clock::now() - start;
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() > 200)
+            {
+                float percentageAssigned = ((float)maxFlow / (float)args.expectedMaxFlow) * 100.f;
+                printf("\r%.2f%%", percentageAssigned);
+                start = std::chrono::system_clock::now();
+            }
         }
         else
         {
@@ -551,6 +561,7 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments&
         bfOutput = BellmanFord(args);
     }
 
+    printf("\r%.2f%%", 100.0f);
     // Create spacing for the rest of the program
     printf("\n\n");
 
