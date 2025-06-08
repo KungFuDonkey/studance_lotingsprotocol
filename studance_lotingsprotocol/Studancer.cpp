@@ -286,7 +286,9 @@ std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes)
         bool halfYearMemberShip = requestedMembership == "halfjaarlijkslidmaatschap";
 
         bool isBoard = contains(boardMembers, dancer.relationNumber);
-        bool isDamn = contains(damnMembers, dancer.relationNumber);
+
+        // Damn members pick damn as first choice
+        bool isDamn = firstChoice == "d.a.m.n.";
 
         if (isBoard)
         {

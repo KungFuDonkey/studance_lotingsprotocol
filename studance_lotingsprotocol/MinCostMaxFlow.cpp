@@ -531,7 +531,8 @@ std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments&
         bfOutput = BellmanFord(args);
     }
 
-    printf("\n");
+    // Create spacing for the rest of the program
+    printf("\n\n");
 
     return std::make_pair(minCost, maxFlow);
 }
