@@ -574,6 +574,8 @@ std::pair<int64_t, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArgume
     printf("\r%.2f%%", 100.0f);
     // Create spacing for the rest of the program
     printf("\n\n");
+    printf("%llu", minCost);
+    printf("\n\n");
 
     return std::make_pair(minCost, maxFlow);
 }
@@ -918,7 +920,7 @@ void MakeEdge(MinCostMaxFlowArgs& args, int u, int v, int64_t c, int cap)
     args.adjecencyList[v].push_back(u);
 }
 
-MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, const std::vector<DanceClass>& classes)
+MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, const std::vector<DanceClass>& classes, const CliArguments& cliArgs)
 {
     // 1 for source
     int numNodes = 1;
@@ -1006,7 +1008,15 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
 
         if (danceClass.name == "niet-dansend lid" || danceClass.name == "unenrolled")
         {
-            MakeEdge(args, classNodeIndex, classNodeCostIndex, underMinBoundsCost, danceClass.maxSize);
+            if (danceClass.name == "unenrolled" && cliArgs.maxUnenroll != 0xFFFFFFFFU)
+            {
+                MakeEdge(args, classNodeIndex, classNodeCostIndex, underMinBoundsCost, cliArgs.maxUnenroll);
+            }
+            else
+            {
+                MakeEdge(args, classNodeIndex, classNodeCostIndex, underMinBoundsCost, danceClass.maxSize);
+            }
+
             MakeEdge(args, classNodeCostIndex, args.sinkNode, 0, INF);
         }
         else

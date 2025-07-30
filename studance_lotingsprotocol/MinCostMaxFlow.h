@@ -53,7 +53,7 @@ struct MinCostMaxFlowArgs
 
 std::pair<int64_t, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments& cliArgs);
 
-MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, const std::vector<DanceClass>& classes);
+MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, const std::vector<DanceClass>& classes, const CliArguments& cliArgs);
 
 Assignment DecodeMinCostMaxFlow(MinCostMaxFlowArgs& args);
 
