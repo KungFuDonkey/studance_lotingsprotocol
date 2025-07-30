@@ -20,7 +20,8 @@ std::string DancerPriorityGroupToString(DancerPriorityGroup group)
 {
     switch (group)
     {
-    case Board: return "Board";
+    case KBBoard: return "KB Board";
+    case HBBoard: return "HB Board";
     case Damn: return "Damn";
     case ExistingMember: return "ExistingMember";
     case NonDancerLastYear: return "NonDancerLastYear";
@@ -81,17 +82,40 @@ std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes)
     std::string line;
     std::ifstream boardFile(boardFilePath);
 
-    std::vector<int> boardMembers;
-    std::vector<int> damnMembers;
+    std::vector<int> kbBoardMembers;
+    std::vector<int> hbBoardMembers;
 
     // Load numbersx that correspond to board members
     while (std::getline(boardFile, line))
     {
-        std::stringstream lineStream(line);
-        std::string parseLine;
-        while (std::getline(lineStream, parseLine, ','))
+        if (line[0] == 'h')
         {
-            boardMembers.push_back(std::stoi(parseLine));
+            line = line.substr(3);
+            std::stringstream lineStream(line);
+            std::string parseLine;
+            while (std::getline(lineStream, parseLine, ','))
+            {
+                hbBoardMembers.push_back(std::stoi(parseLine));
+            }
+        }
+        else if (line[0] == 'k')
+        {
+            line = line.substr(3);
+            std::stringstream lineStream(line);
+            std::string parseLine;
+            while (std::getline(lineStream, parseLine, ','))
+            {
+                kbBoardMembers.push_back(std::stoi(parseLine));
+            }
+        }
+        else
+        {
+            trim(line);
+            if (line != "")
+            {
+                printf("Cannot find hb or kb at beginning of Board.txt");
+                exit(-1);
+            }
         }
     }
 
@@ -286,14 +310,19 @@ std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes)
         tolower(requestedMembership);
         bool halfYearMemberShip = requestedMembership == "halfjaarlijkslidmaatschap";
 
-        bool isBoard = contains(boardMembers, dancer.relationNumber);
+        bool isKBBoard = contains(kbBoardMembers, dancer.relationNumber);
+        bool isHBBoard = contains(hbBoardMembers, dancer.relationNumber);
 
         // Damn members pick damn as first choice
         bool isDamn = firstChoice == "d.a.m.n.";
 
-        if (isBoard)
+        if (isKBBoard)
         {
-            dancer.priorityGroup = Board;
+            dancer.priorityGroup = KBBoard;
+        }
+        else if (isHBBoard)
+        {
+            dancer.priorityGroup = HBBoard;
         }
         else if (isDamn)
         {

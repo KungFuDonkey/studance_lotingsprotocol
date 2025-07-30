@@ -6,7 +6,8 @@
 
 enum DancerPriorityGroup
 {
-    Board,
+    KBBoard,
+    HBBoard,
     Damn,
     ExistingMember,
     NonDancerLastYear,

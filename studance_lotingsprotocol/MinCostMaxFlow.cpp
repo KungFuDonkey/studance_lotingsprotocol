@@ -13,6 +13,7 @@
 
 // not 7FFFFFFF to prevent an overflow
 #define INF 0x3FFFFFFF
+#define INF64 0x3FFFFFFFFFFFFFFFLL
 
 inline void DumpBuffer(const MinCostMaxFlowArgs& args)
 {
@@ -159,7 +160,7 @@ inline const Studancer& GetDancerFromNode(const MinCostMaxFlowArgs& args, int no
 }
 
 // inline functions for bidirectional accesses
-inline int GetDistance(const MinCostMaxFlowArgs& args, int u)
+inline int64_t GetDistance(const MinCostMaxFlowArgs& args, int u)
 {
     if (u >= args.numNodes)
     {
@@ -169,7 +170,7 @@ inline int GetDistance(const MinCostMaxFlowArgs& args, int u)
     }
     return args.distance[u];
 }
-inline void SetDistance(MinCostMaxFlowArgs& args, int u, int value)
+inline void SetDistance(MinCostMaxFlowArgs& args, int u, int64_t value)
 {
     if (u >= args.numNodes)
     {
@@ -229,7 +230,7 @@ inline void AddFlow(MinCostMaxFlowArgs& args, int u, int v, int value)
     }
     args.flow[u * args.numNodes + v] += value;
 }
-inline int GetCost(const MinCostMaxFlowArgs& args, int u, int v)
+inline int64_t GetCost(const MinCostMaxFlowArgs& args, int u, int v)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
@@ -239,7 +240,7 @@ inline int GetCost(const MinCostMaxFlowArgs& args, int u, int v)
     }
     return args.cost[u * args.numNodes + v];
 }
-inline void SetCost(MinCostMaxFlowArgs& args, int u, int v, int value)
+inline void SetCost(MinCostMaxFlowArgs& args, int u, int v, int64_t value)
 {
     if (u >= args.numNodes || v >= args.numNodes)
     {
@@ -286,11 +287,18 @@ inline void InitArray(int* array, int value, int numElements)
         array[i] = value;
     }
 }
+inline void InitArray64(int64_t* array, int64_t value, int numElements)
+{
+    for (int i = 0; i < numElements; i++)
+    {
+        array[i] = value;
+    }
+}
 
-std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
+std::pair<int64_t, int> BellmanFord(MinCostMaxFlowArgs& args)
 {
     // Initialize infinite distances
-    InitArray(args.distance, INF, args.numNodes);
+    InitArray64(args.distance, INF64, args.numNodes);
     InitArray(args.parent, -1, args.numNodes);
 
     // set distance to source node to 0
@@ -305,8 +313,8 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
         for (int currentNode = 0; currentNode < args.numNodes; currentNode++)
         {
             // Skip node if we don't know how to reach it yet
-            const int currentDistance = GetDistance(args, currentNode);
-            if (currentDistance == INF)
+            const int64_t currentDistance = GetDistance(args, currentNode);
+            if (currentDistance == INF64)
             {
                 continue;
             }
@@ -318,7 +326,7 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
                 if (CanFlow(args, currentNode, neighbour))
                 {
                     // if the distance is smaller update the distances and the parent
-                    const int newDistance = currentDistance + GetCost(args, currentNode, neighbour);
+                    const int64_t newDistance = currentDistance + GetCost(args, currentNode, neighbour);
                     if (newDistance < GetDistance(args, neighbour))
                     {
                         SetDistance(args, neighbour, newDistance);
@@ -331,7 +339,7 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
                 // (it is then flowing to the current node and we can cancel the flow)
                 if (GetFlow(args, neighbour, currentNode) > 0)
                 {
-                    const int newDistance = currentDistance - GetCost(args, currentNode, neighbour);
+                    const int64_t newDistance = currentDistance - GetCost(args, currentNode, neighbour);
                     if (newDistance < GetDistance(args, neighbour))
                     {
                         SetDistance(args, neighbour, newDistance);
@@ -355,8 +363,8 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
     for (int currentNode = 0; currentNode < args.numNodes; currentNode++)
     {
         // Skip node if we don't know how to reach it yet
-        const int currentDistance = GetDistance(args, currentNode);
-        if (currentDistance == INF)
+        const int64_t currentDistance = GetDistance(args, currentNode);
+        if (currentDistance == INF64)
         {
             continue;
         }
@@ -368,7 +376,7 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
             bool foundCycle = false;
             if (CanFlow(args, currentNode, neighbour))
             {
-                const int newDistance = currentDistance + GetCost(args, currentNode, neighbour);
+                const int64_t newDistance = currentDistance + GetCost(args, currentNode, neighbour);
                 if (newDistance < GetDistance(args, neighbour))
                 {
                     foundCycle = true;
@@ -377,7 +385,7 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
 
             if (GetFlow(args, neighbour, currentNode) > 0)
             {
-                const int newDistance = currentDistance - GetCost(args, currentNode, neighbour);
+                const int64_t newDistance = currentDistance - GetCost(args, currentNode, neighbour);
                 if (newDistance < GetDistance(args, neighbour))
                 {
                     foundCycle = true;
@@ -399,7 +407,7 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
                 }
 
                 // Negative infinitiy for negative cycle
-                return std::make_pair(-INF, currentNode);
+                return std::make_pair(-INF64, currentNode);
             }
         }
 
@@ -409,28 +417,29 @@ std::pair<int, int> BellmanFord(MinCostMaxFlowArgs& args)
     return std::make_pair(GetDistance(args, args.sinkNode), args.sinkNode);
 }
 
-std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments& cliArgs) {
+std::pair<int64_t, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments& cliArgs) {
 
-    int minCost = 0, maxFlow = 0;
+    int64_t minCost = 0;
+    int maxFlow = 0;
 
     // first stores distance, second stores node
-    std::pair<int, int> bfOutput = BellmanFord(args);
+    std::pair<int64_t, int> bfOutput = BellmanFord(args);
 
     std::chrono::system_clock::time_point start = {};
 
     printf("Assigned:\n");
-    while (bfOutput.first < INF) {
+    while (bfOutput.first < INF64) {
 
         Decision decision = {};
 
-        if (bfOutput.first != -INF && bfOutput.second == args.sinkNode)
+        if (bfOutput.first != -INF64 && bfOutput.second == args.sinkNode)
         {
             // Update flow for path, small optimization here is that we know the max flow over a path is 1
             // This is because you can only CHOOSE a dance class once, and as we always need to go over a choice
             // to get from the source to the sink, the max flow is always 1
             decision.type = AssignDancer;
 
-            int initialCost = minCost;
+            int64_t initialCost = minCost;
 
             int currentNode = args.sinkNode;
             while (currentNode != args.sourceNode)
@@ -576,7 +585,7 @@ MinCostMaxFlowArgs AllocateMinCostMaxFlow(int numNodes)
 
     // distances space
     int distancesOffset = spaceRequired;
-    spaceRequired += numNodes;
+    spaceRequired += numNodes * 2; // 64 bit
 
     // parent space
     int parentOffset = spaceRequired;
@@ -588,7 +597,7 @@ MinCostMaxFlowArgs AllocateMinCostMaxFlow(int numNodes)
 
     // cost space
     int costOffset = spaceRequired;
-    spaceRequired += numNodes * numNodes;
+    spaceRequired += numNodes * numNodes * 2; // 64 bit
 
     // capacity space
     int capacityOffset = spaceRequired;
@@ -603,9 +612,9 @@ MinCostMaxFlowArgs AllocateMinCostMaxFlow(int numNodes)
     args.sinkNode = numNodes - 1;
     args.numNodes = numNodes;
     args.adjecencyList = new std::vector<int>[numNodes];
-    args.cost = &buffer[costOffset];
+    args.cost = (int64_t*)&buffer[costOffset];
     args.capacity = &buffer[capacityOffset];
-    args.distance = &buffer[distancesOffset];
+    args.distance = (int64_t*)&buffer[distancesOffset];
     args.parent = &buffer[parentOffset];
     args.flow = &buffer[flowOffset];
     args.bufferDwords = spaceRequired;
@@ -614,41 +623,291 @@ MinCostMaxFlowArgs AllocateMinCostMaxFlow(int numNodes)
     return args;
 }
 
-// This probably needs tuning
-const int choiceCost = 3;
-const int additionalAdviceCost = -choiceCost;
-
-const int choiceOffset = 12;
-
-const int isBoardOrDamnCost = 0;
-const int isExistingMemberCost = isBoardOrDamnCost + choiceOffset;
-const int wasNonDancingMemberCost = isExistingMemberCost + choiceOffset;
-const int wasUnrolledLastYearCost = wasNonDancingMemberCost + choiceOffset;
-const int isNonFemaleCost = wasUnrolledLastYearCost + choiceOffset;
-const int isFemaleCost = isNonFemaleCost + choiceOffset;
-const int isHalfYearCost = isFemaleCost + choiceOffset;
-const int isGapYearCost = isHalfYearCost + choiceOffset;
-const int isHalfGapYearCost = isGapYearCost + choiceOffset;
-const int isNonStudyingCost = isHalfGapYearCost + choiceOffset;
-const int isHalfNonStudyingCost = isNonStudyingCost + choiceOffset;
-
 const int underMinBoundsCost = 0;
 const int isWithinClassBoundsCost = 1;
-const int useAdditionalSpaceCost = isHalfYearCost;
+const int useAdditionalSpaceCost = 2;
 
-int GetUnenrollmentCostForDancer(const Studancer& dancer)
+int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chosenClass, int choiceNumber)
 {
-    return 10000;
+    // Layout is:
+    //    [0-2]: 1st - 3rd choice
+    //    [3]  : unrolled cost
+    // If someone decides not to enroll for 3 classes, the choice to unroll them is made earlier
+    int64_t boardAndDamnCost[4] = {
+        0,
+        0,
+        300000000,
+        600000000
+    };
+
+    // if four ExistingMembers can go from unenrolled to 1st choice to stop an advised choice it will happen
+    // calculation:
+    //      (9500 - 3000) + 4 * (9000 - 11000) < 0
+    //      (9500 - 3000) + 3 * (9000 - 11000) > 0
+    int64_t existingMemberFollowsAdviceCost = 300000;
+    uint64_t existingCost[4] = {
+         900000,
+         950000,
+        1000000,
+        1100000
+    };
+
+
+    // NonDancing and Unrolled are basically grouped in the same math equations
+    // The NonDancing have slightly higher priority than Unrolled
+
+    // if two NonDancing/Unrolled members can go from 3rd to first choice due to a single ExistingMember
+    // if four NonDancing/Unrolled members can go from 2nd to first choice due to a single ExistingMember
+    //   we should pick that solution
+    uint64_t nonDancingLastYearCost[4] = {
+        1010000,
+        1027500,
+        1045000,
+        1090000
+    };
+    uint64_t unrolledLastYearCost[4] = {
+        1020000,
+        1035000,
+        1050000,
+        1080000
+    };
+
+    // Female and NonFemale are basically grouped in the same math equations
+    // The NonFemale have slightly higher priority than Unrolled
+
+    //if two NonFemale/Female members can go from 3rd to first choice due to a single NonDancingMembers
+    //if four NonFemale/Female members can go from 2nd to first choice due to a single NonDancingMembers
+    //    we should pick that solution
+    uint64_t nonFemaleCost[4] = {
+        1010000,
+        1027500,
+        1045000,
+        1090000
+    };
+    uint64_t femaleCost[4] = {
+        1020000,
+        1035000,
+        1050000,
+        1080000
+    };
+
+    // if two HalfYear members can go from 3rd to first choice due to a single NonFemale
+    // if four HalfYear members can go from 2nd to first choice due to a single NonFemale
+    //    we should pick that solution
+    uint64_t halfYearCost[4] = {
+        1062100,
+        1064050,
+        1066000,
+        1069900
+    };
+
+    // if two GapYear/HalfGapYear members can go from 3rd to first choice due to a single HalfYear
+    // if four GapYear/HalfGapYear members can go from 2nd to first choice due to a single HalfYear
+    //    we should pick that solution
+    uint64_t gapYearCost[4] = {
+        1066300,
+        1067000,
+        1067700,
+        1069100
+    };
+    uint64_t halfGapYearCost[4] = {
+        1066600,
+        1067200,
+        1067800,
+        1069000
+    };
+
+    // if two NonStudying/HalfNonStudying members can go from 3rd to first choice due to a single GapYear
+    // if four NonStudying/HalfNonStudying can go from 2nd to first choice due to a single GapYear
+    //    we should pick that solution
+    uint64_t nonStudyingCost[4] = {
+        1066300,
+        1067000,
+        1067700,
+        1069100
+    };
+    uint64_t halfNonStudyingCost[4] = {
+        1066600,
+        1067200,
+        1067800,
+        1069000
+    };
+
+#if 1
+    uint64_t baseCost = existingMemberFollowsAdviceCost;
+    uint64_t maxCost = 300000000;
+
+    uint64_t start[3]
+    {
+        0,0,0
+    };
+    uint64_t increment[3]
+    {
+        0,0,0
+    };
+
+    increment[0] = 8988;
+    start[0] = baseCost + increment[0] * 3 + 1;
+
+    for (int i = 0; i < 2; i++)
+    {
+        increment[i + 1] = increment[i] / 3 + 1;
+        start[i + 1] = start[i] + 2 * increment[i] + 10; // added padding
+    }
+
+    uint64_t groupCost[3][4] = {};
+
+    for (int i = 0; i < 3; i++)
+    {
+        groupCost[i][0] = start[i];
+        for (int j = 1; j < 3; j++)
+        {
+            groupCost[i][j] = groupCost[i][j - 1] + increment[i];
+        }
+    }
+
+    uint64_t unenrollCost = groupCost[0][2] * (1 << 4);
+    for (int i = 0; i < 3; i++)
+    {
+        groupCost[i][3] = unenrollCost;
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        existingCost[i] = groupCost[0][i];
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        nonDancingLastYearCost[i] = groupCost[1][i];
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        unrolledLastYearCost[i] = groupCost[1][i] + 1;
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        nonFemaleCost[i] = groupCost[1][i] + 2;
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        femaleCost[i] = groupCost[1][i] + 3;
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        halfYearCost[i] = groupCost[2][i];
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        gapYearCost[i] = groupCost[2][i] + 1;
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        halfGapYearCost[i] = groupCost[2][i] + 2;
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        nonStudyingCost[i] = groupCost[2][i] + 3;
+    }
+
+    for (int i = 0; i < 4; i++)
+    {
+        halfNonStudyingCost[i] = groupCost[2][i] + 4;
+    }
+#endif
+
+    // flat cost of +1 such that it is better to not unenroll someone when the choice is between
+    // moving someone to 2nd or 3rd choice or someone to unenrolled
+    int isUnrolledClass = chosenClass == "unenrolled" ? 1 : 0;
+
+    if (choiceNumber > 3)
+    {
+        choiceNumber = 3;
+        printf("Warning: Dancer %i has more choices than allowed", dancer.relationNumber);
+    }
+
+    // Smallest cost for board and damn
+    if (dancer.priorityGroup == KBBoard || dancer.priorityGroup == HBBoard || dancer.priorityGroup == Damn)
+    {
+        return boardAndDamnCost[choiceNumber] + isUnrolledClass;
+    }
+
+    // For exising members that follow advice (First class only (choiceNumber == 0)) give next smallest cost
+    if ((dancer.priorityGroup == ExistingMember) && choiceNumber == 0 && contains(dancer.advisedClasses, chosenClass))
+    {
+        return existingMemberFollowsAdviceCost + isUnrolledClass;
+    }
+
+    if (dancer.priorityGroup == ExistingMember)
+    {
+        return existingCost[choiceNumber] + isUnrolledClass;
+    }
+
+    if (dancer.priorityGroup == NonDancerLastYear)
+    {
+        return nonDancingLastYearCost[choiceNumber] + isUnrolledClass;
+    }
+
+    if (dancer.priorityGroup == UnrolledLastYear)
+    {
+        return unrolledLastYearCost[choiceNumber] + isUnrolledClass;
+    }
+
+    if (dancer.priorityGroup == NonFemale)
+    {
+        return nonFemaleCost[choiceNumber] + isUnrolledClass;
+    }
+
+    if (dancer.priorityGroup == Female)
+    {
+        return femaleCost[choiceNumber] + isUnrolledClass;
+    }
+
+    if (dancer.priorityGroup == HalfYear)
+    {
+        return halfYearCost[choiceNumber] + isUnrolledClass;
+    }
+
+    if (dancer.priorityGroup == GapYear)
+    {
+        return gapYearCost[choiceNumber] + isUnrolledClass;
+    }
+
+    if (dancer.priorityGroup == HalfGapYear)
+    {
+        return halfGapYearCost[choiceNumber] + isUnrolledClass;
+    }
+
+    if (dancer.priorityGroup == NonStudying)
+    {
+        return nonStudyingCost[choiceNumber] + isUnrolledClass;
+    }
+
+    if (dancer.priorityGroup == HalfNonStudying)
+    {
+        return halfNonStudyingCost[choiceNumber] + isUnrolledClass;
+    }
+
+    printf("Warning: Dancer %i was not categorized correctly setting half non studying cost", dancer.relationNumber);
+
+    return halfNonStudyingCost[choiceNumber] + isUnrolledClass;
 }
 
-int GetCostForDancer(const Studancer& dancer)
+const int choiceOffset = 12;
+int64_t GetCostForDancer(const Studancer& dancer)
 {
     int priorityGroup = (int)dancer.priorityGroup;
-
     return priorityGroup * choiceOffset;
 }
 
-void MakeEdge(MinCostMaxFlowArgs& args, int u, int v, int c, int cap)
+void MakeEdge(MinCostMaxFlowArgs& args, int u, int v, int64_t c, int cap)
 {
     // forward
     args.adjecencyList[u].push_back(v);
@@ -708,14 +967,14 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
         int dancerNodeIndex = args.dancerOffset + i;
 
         // Different types of dancers have different types of cost
-        int dancerCost = GetCostForDancer(dancer);
-        int unenrolledCost = GetUnenrollmentCostForDancer(dancer);
+        int64_t dancerCost = GetCostForDancer(dancer);
         // Board members can assign 2 classes
-        int numDanceClassesToChoose = dancer.priorityGroup == Board ? 2 : 1;
+        int numDanceClassesToChoose = dancer.priorityGroup == KBBoard ? 2 : 1;
         args.expectedMaxFlow += numDanceClassesToChoose;
 
         MakeEdge(args, 0, dancerNodeIndex, dancerCost, numDanceClassesToChoose);
 
+        int choiceNumber = 0;
         // encode choices
         for (int j = 0; j < dancer.chosenClasses.size(); j++)
         {
@@ -726,23 +985,13 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
             const std::string& chosenClass = dancer.chosenClasses[j];
             int classNodeIndex = classMap[chosenClass] + args.classOffset;
 
-            if (chosenClass == "unenrolled")
-            {
-                // special cost for unenrollmlent
-                MakeEdge(args, dancerNodeIndex, classNodeIndex, unenrolledCost, 1);
-            }
-            else
-            {
-                bool wasAdvised = contains(dancer.advisedClasses, chosenClass);
+            // Note: Also handles unenrolled
+            int64_t classCost = GetChoiceCostForDancer(dancer, chosenClass, choiceNumber);
 
-                // 3 -> 7 -> 11
-                int classCost = j + (j + 1) * choiceCost;
-                classCost -= wasAdvised ? additionalAdviceCost : 0;
+            // can only choose class once
+            MakeEdge(args, dancerNodeIndex, classNodeIndex, classCost, 1);
 
-                // can only choose class once
-                MakeEdge(args, dancerNodeIndex, classNodeIndex, classCost, 1);
-            }
-
+            choiceNumber++;
         }
     }
 
@@ -755,14 +1004,22 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
 
         int classNodeCostIndex = i * 3 + args.classCostOffset;
 
-        MakeEdge(args, classNodeIndex, classNodeCostIndex    , underMinBoundsCost     , danceClass.minSize);
-        MakeEdge(args, classNodeIndex, classNodeCostIndex + 1, isWithinClassBoundsCost, danceClass.maxSize - danceClass.minSize);
-        MakeEdge(args, classNodeIndex, classNodeCostIndex + 2, useAdditionalSpaceCost , danceClass.additionalSpace);
+        if (danceClass.name == "niet-dansend lid" || danceClass.name == "unenrolled")
+        {
+            MakeEdge(args, classNodeIndex, classNodeCostIndex, underMinBoundsCost, danceClass.maxSize);
+            MakeEdge(args, classNodeCostIndex, args.sinkNode, 0, INF);
+        }
+        else
+        {
+            MakeEdge(args, classNodeIndex, classNodeCostIndex, underMinBoundsCost, danceClass.minSize);
+            MakeEdge(args, classNodeIndex, classNodeCostIndex + 1, isWithinClassBoundsCost, danceClass.maxSize - danceClass.minSize);
+            MakeEdge(args, classNodeIndex, classNodeCostIndex + 2, useAdditionalSpaceCost, danceClass.additionalSpace);
 
-        // We set cost and capacity to 0 as that was already calculated in the last edge
-        MakeEdge(args, classNodeCostIndex, args.sinkNode, 0, INF);
-        MakeEdge(args, classNodeCostIndex + 1, args.sinkNode, 0, INF);
-        MakeEdge(args, classNodeCostIndex + 2, args.sinkNode, 0, INF);
+            // We set cost and capacity to 0 as that was already calculated in the last edge
+            MakeEdge(args, classNodeCostIndex, args.sinkNode, 0, INF);
+            MakeEdge(args, classNodeCostIndex + 1, args.sinkNode, 0, INF);
+            MakeEdge(args, classNodeCostIndex + 2, args.sinkNode, 0, INF);
+        }
     }
 
     // Check the encoding

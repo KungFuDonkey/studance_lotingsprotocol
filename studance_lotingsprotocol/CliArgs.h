@@ -8,6 +8,7 @@ struct CliArguments
     bool displayHelp;
     bool mcmf;
     bool lottery;
+    bool forceMinUnenroll;
     std::vector<std::string> unknownArgs;
     std::vector<std::string> parseFailures;
 };

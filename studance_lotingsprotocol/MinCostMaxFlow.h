@@ -15,7 +15,7 @@ struct Decision
 {
     DecisionType type;
     int flowChange;
-    int costChange;
+    int64_t costChange;
     std::vector<int> changedNodes;
 };
 
@@ -30,11 +30,11 @@ struct MinCostMaxFlowArgs
 
     int numNodes;                   // number of nodes
     std::vector<int>* adjecencyList; // Array of vectors containing the adjecency list, size = numNodes
-    int* cost;                       // Array of costs, size = numNodes * numNodes
+    int64_t* cost;                       // Array of costs, size = numNodes * numNodes
     int* capacity;                   // Array of capacities, size = numNodes * numNodes
 
     // Shortest path calculation data
-    int* distance;                   // distances for each node, size = numNodes
+    int64_t* distance;                   // distances for each node, size = numNodes
     int* parent;                     // for reconstructing the path, size = numNodes
 
     // mcmf
@@ -51,7 +51,7 @@ struct MinCostMaxFlowArgs
     std::vector<Decision> decisions;
 };
 
-std::pair<int, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments& cliArgs);
+std::pair<int64_t, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArguments& cliArgs);
 
 MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, const std::vector<DanceClass>& classes);
 
