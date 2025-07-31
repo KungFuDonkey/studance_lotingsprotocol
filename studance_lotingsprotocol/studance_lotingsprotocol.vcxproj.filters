@@ -33,6 +33,9 @@
     <ClCompile Include="Utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DanceClass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Assignment.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -43,9 +46,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Lottery.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DanceClass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -79,12 +79,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="..\input\dansers.csv">
-      <Filter>Resource Files\input</Filter>
-    </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="..\input\danceclasses.csv">
+      <Filter>Resource Files\input</Filter>
+    </None>
+    <None Include="..\input\dansers.csv">
       <Filter>Resource Files\input</Filter>
     </None>
   </ItemGroup>

@@ -304,11 +304,11 @@ std::pair<int64_t, int> BellmanFord(MinCostMaxFlowArgs& args)
     // set distance to source node to 0
     SetDistance(args, args.sourceNode, 0);
 
-    bool hadUpdate = false;
-
     // at most n iterations
     for (int bfIteration = 0; bfIteration < args.numNodes; bfIteration++)
     {
+        bool hadUpdate = false;
+
         // Go through all the nodes
         for (int currentNode = 0; currentNode < args.numNodes; currentNode++)
         {
@@ -339,7 +339,7 @@ std::pair<int64_t, int> BellmanFord(MinCostMaxFlowArgs& args)
                 // (it is then flowing to the current node and we can cancel the flow)
                 if (GetFlow(args, neighbour, currentNode) > 0)
                 {
-                    const int64_t newDistance = currentDistance - GetCost(args, currentNode, neighbour);
+                    const int64_t newDistance = currentDistance - GetCost(args, neighbour, currentNode);
                     if (newDistance < GetDistance(args, neighbour))
                     {
                         SetDistance(args, neighbour, newDistance);
@@ -631,6 +631,10 @@ const int useAdditionalSpaceCost = 2;
 
 int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chosenClass, int choiceNumber)
 {
+    if (chosenClass == "unenrolled")
+    {
+        choiceNumber = 3;
+    }
     // Layout is:
     //    [0-2]: 1st - 3rd choice
     //    [3]  : unrolled cost
@@ -646,8 +650,8 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
     // calculation:
     //      (9500 - 3000) + 4 * (9000 - 11000) < 0
     //      (9500 - 3000) + 3 * (9000 - 11000) > 0
-    int64_t existingMemberFollowsAdviceCost = 300000;
-    uint64_t existingCost[4] = {
+    int64_t existingMemberFollowsAdviceCost = 0;
+    int64_t existingCost[4] = {
          900000,
          950000,
         1000000,
@@ -661,13 +665,13 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
     // if two NonDancing/Unrolled members can go from 3rd to first choice due to a single ExistingMember
     // if four NonDancing/Unrolled members can go from 2nd to first choice due to a single ExistingMember
     //   we should pick that solution
-    uint64_t nonDancingLastYearCost[4] = {
+    int64_t nonDancingLastYearCost[4] = {
         1010000,
         1027500,
         1045000,
         1090000
     };
-    uint64_t unrolledLastYearCost[4] = {
+    int64_t unrolledLastYearCost[4] = {
         1020000,
         1035000,
         1050000,
@@ -680,13 +684,13 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
     //if two NonFemale/Female members can go from 3rd to first choice due to a single NonDancingMembers
     //if four NonFemale/Female members can go from 2nd to first choice due to a single NonDancingMembers
     //    we should pick that solution
-    uint64_t nonFemaleCost[4] = {
+    int64_t nonFemaleCost[4] = {
         1010000,
         1027500,
         1045000,
         1090000
     };
-    uint64_t femaleCost[4] = {
+    int64_t femaleCost[4] = {
         1020000,
         1035000,
         1050000,
@@ -696,7 +700,7 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
     // if two HalfYear members can go from 3rd to first choice due to a single NonFemale
     // if four HalfYear members can go from 2nd to first choice due to a single NonFemale
     //    we should pick that solution
-    uint64_t halfYearCost[4] = {
+    int64_t halfYearCost[4] = {
         1062100,
         1064050,
         1066000,
@@ -706,13 +710,13 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
     // if two GapYear/HalfGapYear members can go from 3rd to first choice due to a single HalfYear
     // if four GapYear/HalfGapYear members can go from 2nd to first choice due to a single HalfYear
     //    we should pick that solution
-    uint64_t gapYearCost[4] = {
+    int64_t gapYearCost[4] = {
         1066300,
         1067000,
         1067700,
         1069100
     };
-    uint64_t halfGapYearCost[4] = {
+    int64_t halfGapYearCost[4] = {
         1066600,
         1067200,
         1067800,
@@ -722,13 +726,13 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
     // if two NonStudying/HalfNonStudying members can go from 3rd to first choice due to a single GapYear
     // if four NonStudying/HalfNonStudying can go from 2nd to first choice due to a single GapYear
     //    we should pick that solution
-    uint64_t nonStudyingCost[4] = {
+    int64_t nonStudyingCost[4] = {
         1066300,
         1067000,
         1067700,
         1069100
     };
-    uint64_t halfNonStudyingCost[4] = {
+    int64_t halfNonStudyingCost[4] = {
         1066600,
         1067200,
         1067800,
@@ -736,14 +740,14 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
     };
 
 #if 1
-    uint64_t baseCost = existingMemberFollowsAdviceCost;
-    uint64_t maxCost = 300000000;
+    int64_t baseCost = 300000;
+    int64_t maxCost = 300000000;
 
-    uint64_t start[3]
+    int64_t start[3]
     {
         0,0,0
     };
-    uint64_t increment[3]
+    int64_t increment[3]
     {
         0,0,0
     };
@@ -757,7 +761,7 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
         start[i + 1] = start[i] + 2 * increment[i] + 10; // added padding
     }
 
-    uint64_t groupCost[3][4] = {};
+    int64_t groupCost[3][4] = {};
 
     for (int i = 0; i < 3; i++)
     {
@@ -768,11 +772,10 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
         }
     }
 
-    uint64_t unenrollCost = groupCost[0][2] * (1 << 4);
-    for (int i = 0; i < 3; i++)
-    {
-        groupCost[i][3] = unenrollCost;
-    }
+    int64_t unenrollBase = groupCost[0][2];
+    groupCost[0][3] = unenrollBase * 1.5f;
+    groupCost[1][3] = unenrollBase * 1.4f;
+    groupCost[2][3] = unenrollBase * 1.3f;
 
     for (int i = 0; i < 4; i++)
     {
@@ -971,7 +974,7 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
         // Different types of dancers have different types of cost
         int64_t dancerCost = GetCostForDancer(dancer);
         // Board members can assign 2 classes
-        int numDanceClassesToChoose = dancer.priorityGroup == KBBoard ? 2 : 1;
+        int numDanceClassesToChoose = dancer.priorityGroup == KBBoard || dancer.priorityGroup == Damn ? 2 : 1;
         args.expectedMaxFlow += numDanceClassesToChoose;
 
         MakeEdge(args, 0, dancerNodeIndex, dancerCost, numDanceClassesToChoose);
@@ -1061,10 +1064,11 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
     {
         int dancerIndex = args.dancerOffset + i;
         const Studancer& dancer = GetDancerFromNode(args, dancerIndex);
-
+        bool foundUnenrolled = false;
         // Check all connections
         for (int j = 0; j < args.numNodes; j++)
         {
+
             if (GetCapacity(args, dancerIndex, j) > 0)
             {
                 // if there is a link it MUST be a class and in the chosen list of the dancer
@@ -1080,7 +1084,13 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
                     printf("ERROR: dancer %s did not choose node %s but it has been connected\n", GetNodeName(args, i).c_str(), nodeName.c_str());
                     exit(-1);
                 }
+                foundUnenrolled = foundUnenrolled || (nodeName == "unenrolled");
             }
+        }
+        if (!foundUnenrolled)
+        {
+            printf("ERROR: dancer node %s was not connected to the unenrolled class\n", GetNodeName(args, i).c_str());
+            exit(-1);
         }
 
         // Check chosen connections specifically

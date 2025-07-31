@@ -149,14 +149,15 @@ std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes)
 
     // Required headers for algorihtm to work
     std::vector<std::string> requiredHeaders = {
+        "relatienummer",
         "studentstatus",
+        "ben je al lid van studance",
         "gender",
         "1e keuze",
         "2e keuze",
         "3e keuze",
         "advies",
-        "lidmaatschap",
-        "relatienummer"
+        "lidmaatschap"
     };
     std::vector<std::string> failedHeaders;
     for (auto& header : requiredHeaders)
@@ -197,19 +198,6 @@ std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes)
             indices[i] = ParseTillNextComma(line, offset);
         }
 
-        // TODO wasNonDancingMemberLastYear
-        // TODO wasUnrolledLastYear
-
-        std::string membershipStatus = indices[inputHeaderMap["ben je al lid"]];
-        trim(membershipStatus);
-        tolower(membershipStatus);
-        bool wasUnenrolledLastYear = membershipStatus == "nee, ik stond eind vorig dansseizoen nog op de wachtlijst";
-
-        if (wasUnenrolledLastYear)
-        {
-            printf("");
-        }
-
         // Store the input row for export
         dancer.tableRow = line;
 
@@ -223,10 +211,13 @@ std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes)
         bool isStudent = studentStatus == "student";
         bool hasGapYear = studentStatus == "tussenjaar";
 
-        std::string wasAMember = indices[inputHeaderMap["ben je al lid"]];
+        std::string wasAMember = indices[inputHeaderMap["ben je al lid van studance"]];
         trim(wasAMember);
         tolower(wasAMember);
         bool isNewMember = wasAMember == "nee";
+        bool wasUnenrolledLastYear = wasAMember == "nee, ik stond eind vorig dansseizoen nog op de wachtlijst" ||
+                                     wasAMember == "nee, ik ben vorig seizoen uitgeloot";
+        bool wasNonDancingMember = wasAMember == "ja, ik ben niet-dansend lid";
 
         std::string gender = indices[inputHeaderMap["gender"]];
         trim(gender);
@@ -368,7 +359,10 @@ std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes)
         {
             dancer.priorityGroup = UnrolledLastYear;
         }
-        // TODO was Non dancing member and unrolled
+        else if (wasNonDancingMember)
+        {
+            dancer.priorityGroup = NonDancerLastYear;
+        }
         else if (!isNewMember)
         {
             dancer.priorityGroup = ExistingMember;
