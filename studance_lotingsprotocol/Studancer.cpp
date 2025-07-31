@@ -200,6 +200,16 @@ std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes)
         // TODO wasNonDancingMemberLastYear
         // TODO wasUnrolledLastYear
 
+        std::string membershipStatus = indices[inputHeaderMap["ben je al lid"]];
+        trim(membershipStatus);
+        tolower(membershipStatus);
+        bool wasUnenrolledLastYear = membershipStatus == "nee, ik stond eind vorig dansseizoen nog op de wachtlijst";
+
+        if (wasUnenrolledLastYear)
+        {
+            printf("");
+        }
+
         // Store the input row for export
         dancer.tableRow = line;
 
@@ -353,6 +363,10 @@ std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes)
         else if (halfYearMemberShip)
         {
             dancer.priorityGroup = HalfYear;
+        }
+        else if (wasUnenrolledLastYear)
+        {
+            dancer.priorityGroup = UnrolledLastYear;
         }
         // TODO was Non dancing member and unrolled
         else if (!isNewMember)

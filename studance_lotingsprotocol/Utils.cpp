@@ -65,7 +65,7 @@ fs::path FindFolderInParentDirs(const std::string& folder)
 
     if (currentPath == currentPath.parent_path())
     {
-        printf("Could not find input folder, please make a folder called 'input' at: %ls", fs::current_path().c_str());
+        printf("Could not find %s folder, please make a folder called %s at: %ls", folder.c_str(), folder.c_str(), fs::current_path().c_str());
         exit(-1);
     }
 

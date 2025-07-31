@@ -574,8 +574,8 @@ std::pair<int64_t, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArgume
     printf("\r%.2f%%", 100.0f);
     // Create spacing for the rest of the program
     printf("\n\n");
-    printf("%llu", minCost);
-    printf("\n\n");
+    //printf("%llu", minCost);
+    //printf("\n\n");
 
     return std::make_pair(minCost, maxFlow);
 }
