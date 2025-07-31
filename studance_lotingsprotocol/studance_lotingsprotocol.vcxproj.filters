@@ -79,12 +79,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CopyFileToFolders Include="..\input\dansers.csv">
-      <Filter>Resource Files\input</Filter>
-    </CopyFileToFolders>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="..\input\danceclasses.csv">
+      <Filter>Resource Files\input</Filter>
+    </None>
+    <None Include="..\input\dansers.csv">
       <Filter>Resource Files\input</Filter>
     </None>
   </ItemGroup>

@@ -15,6 +15,8 @@ void PrintAssignmentStats(const Assignment& assignment)
     {
         classBuckets[i] = 0;
     }
+    int advisedBucket = 0;
+    int totalAdvises = 0;
     int classIndex = 0;
     int unenrolled = 0;
     for (auto& classAssignment : assignment)
@@ -23,9 +25,17 @@ void PrintAssignmentStats(const Assignment& assignment)
         {
             for (int i = 0; i < 4 && i < dancer.chosenClasses.size(); i++)
             {
+                std::string dancerAdvise = dancer.advisedClasses.size() > 0 ? dancer.advisedClasses[0] : "";
                 if (dancer.chosenClasses[i] == classAssignment.first.name)
                 {
+                    if (dancer.priorityGroup == ExistingMember && i == 0 && dancerAdvise == classAssignment.first.name)
+                    {
+                        advisedBucket++;
+                        totalAdvises++;
+                    }
+
                     buckets[(int)dancer.priorityGroup][i]++;
+
 
                     if (classAssignment.first.name != "unenrolled")
                     {
@@ -35,6 +45,10 @@ void PrintAssignmentStats(const Assignment& assignment)
                     {
                         unenrolled++;
                     }
+                }
+                else if (dancer.priorityGroup == ExistingMember && i == 0 && dancerAdvise != "")
+                {
+                    totalAdvises++;
                 }
             }
         }
@@ -75,7 +89,7 @@ void PrintAssignmentStats(const Assignment& assignment)
             int total = buckets[i][0] + buckets[i][1] + buckets[i][2] + buckets[i][3];
             if (total == 0)
             {
-                printf("|   0 (  0.00%%) ||   0 (  0.00%%) ||   0 (  0.00%%) ||   0 (  0.00%%) |\n");
+                printf("|   0 (  0.00%%) ||   0 (  0.00%%) ||   0 (  0.00%%) ||   0 (  0.00%%) |");
             }
             else
             {
@@ -96,8 +110,15 @@ void PrintAssignmentStats(const Assignment& assignment)
                     printf("| %s%i (%s%.2f%%) |", numberSpacing.c_str(), v, percentageSpacing.c_str(), p);
                     bucketIndex++;
                 }
-                printf("\n");
             }
+
+            if (group == ExistingMember)
+            {
+                float advisedPercent = ((float)advisedBucket / (float)totalAdvises) * 100.0f;
+                printf(" Advised: %i/%i (%.2f%%)", advisedBucket, totalAdvises, advisedPercent);
+            }
+
+            printf("\n");
         }
         printf("%s====================================================================\n\n\n", headerRow.c_str());
     }

@@ -36,7 +36,7 @@ void RunMCMF(const std::vector<Studancer>& dancers, const std::vector<DanceClass
     printf("*******************************************************************************\n\n");
 
     // Encode the mincost maxflow problem
-    MinCostMaxFlowArgs mcmf = EncodeMinCostMaxFlow(dancers, classes);
+    MinCostMaxFlowArgs mcmf = EncodeMinCostMaxFlow(dancers, classes, cliArgs);
 
     // Solve min cost max flow
     auto result = MinCostMaxFlow(mcmf, cliArgs);

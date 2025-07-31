@@ -1,6 +1,10 @@
 #include "CliArgs.h"
 #include <string>
+#include <algorithm>
 
+bool is_number(const std::string& s) {
+    return !s.empty() && std::all_of(s.begin(), s.end(), ::isdigit);
+}
 
 CliArguments InitializeCliArgs(int argc, char* argv[])
 {
@@ -12,12 +16,8 @@ CliArguments InitializeCliArgs(int argc, char* argv[])
     }
 
     CliArguments cliArgs;
-    cliArgs.asText = false;
-    cliArgs.displayHelp = false;
-    cliArgs.lottery = false;
-    cliArgs.mcmf = false;
-    cliArgs.unknownArgs = std::vector<std::string>();
-    cliArgs.parseFailures = std::vector<std::string>();
+    cliArgs = {};
+    cliArgs.maxUnenroll = 0xFFFFFFFFU;
 
     // Return default if there are no args
     if (argc == 0)
@@ -25,8 +25,22 @@ CliArguments InitializeCliArgs(int argc, char* argv[])
         return cliArgs;
     }
 
+    bool parseNextArgAsMaxUnenroll = false;
     for (auto& arg : args)
     {
+        if (parseNextArgAsMaxUnenroll)
+        {
+            parseNextArgAsMaxUnenroll = false;
+            if (is_number(arg))
+            {
+                cliArgs.maxUnenroll = stoi(arg);
+            }
+            else
+            {
+                printf("Did not find number after --max-unenroll");
+            }
+        }
+
         if (arg == "--help" || arg == "-h")
         {
             cliArgs.displayHelp = true;
@@ -42,6 +56,10 @@ CliArguments InitializeCliArgs(int argc, char* argv[])
         else if (arg == "--txt" || arg == "-t")
         {
             cliArgs.asText = true;
+        }
+        else if (arg == "--max-unenroll")
+        {
+            parseNextArgAsMaxUnenroll = true;
         }
     }
 
