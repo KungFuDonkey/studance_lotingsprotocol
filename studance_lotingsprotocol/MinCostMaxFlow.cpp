@@ -646,6 +646,13 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
         600000000
     };
 
+    int64_t hbboardCost[4] = {
+        0,
+        200000000,
+        300000000,
+        600000000
+    };
+
     // if four ExistingMembers can go from unenrolled to 1st choice to stop an advised choice it will happen
     // calculation:
     //      (9500 - 3000) + 4 * (9000 - 11000) < 0
@@ -838,8 +845,13 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
         printf("Warning: Dancer %i has more choices than allowed", dancer.relationNumber);
     }
 
+    if (dancer.priorityGroup == HBBoard)
+    {
+        return hbboardCost[choiceNumber] + isUnrolledClass;
+    }
+
     // Smallest cost for board and damn
-    if (dancer.priorityGroup == KBBoard || dancer.priorityGroup == HBBoard || dancer.priorityGroup == Damn)
+    if (dancer.priorityGroup == KBBoard || dancer.priorityGroup == Damn)
     {
         return boardAndDamnCost[choiceNumber] + isUnrolledClass;
     }

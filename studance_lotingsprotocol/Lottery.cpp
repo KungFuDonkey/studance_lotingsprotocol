@@ -15,6 +15,10 @@ void AssignPriorityGroup(std::vector<Studancer>& group, LotteryAssignment& assig
                 continue;
             }
 
+            if (assignment.find(chosenClass) == assignment.end())
+            {
+                printf("");
+            }
             auto& classAssignment = assignment[chosenClass];
 
             // Check if there is space in this class
