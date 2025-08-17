@@ -19,6 +19,7 @@ void tolower(std::string& s);
 
 // finds a file with multiple filenames
 void FindInputFile(std::vector<std::string> fileNames, fs::path& filePath);
+void FindOutputFile(std::vector<std::string> fileNames, fs::path& filePath);
 
 // Returns true when a vector contains a value
 template<typename T>

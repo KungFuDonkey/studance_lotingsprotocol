@@ -26,14 +26,12 @@ void tolower(std::string& s)
     std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
 }
 
-// Finds file according to a list
-void FindInputFile(std::vector<std::string> fileNames, std::filesystem::path& filePath)
+void FindFile(std::vector<std::string> fileNames, fs::path folder, std::filesystem::path& filePath)
 {
     bool found = false;
-    fs::path inputDir = GetInputFolder();
     for (auto& fileName : fileNames)
     {
-        auto path = inputDir / fileName.c_str();
+        auto path = folder / fileName.c_str();
         if (fs::exists(path))
         {
             filePath = path;
@@ -47,11 +45,22 @@ void FindInputFile(std::vector<std::string> fileNames, std::filesystem::path& fi
         printf("Failed to find %s file, searches included:\n", fileNames[0].c_str());
         for (auto& fileName : fileNames)
         {
-            fs::path path = inputDir / fileName.c_str();
+            fs::path path = folder / fileName.c_str();
             printf("    %ls\n", path.c_str());
         }
         exit(-1);
     }
+}
+
+// Finds file according to a list
+void FindInputFile(std::vector<std::string> fileNames, std::filesystem::path& filePath)
+{
+    FindFile(fileNames, GetInputFolder(), filePath);
+}
+
+void FindOutputFile(std::vector<std::string> fileNames, std::filesystem::path& filePath)
+{
+    FindFile(fileNames, GetOutputFolder(), filePath);
 }
 
 fs::path FindFolderInParentDirs(const std::string& folder)

@@ -1,5 +1,6 @@
 #include "MinCostMaxFlow.h"
 #include "Utils.h"
+#include "Export.h"
 #include <algorithm>
 #include <cstring>
 #include <queue>
@@ -337,7 +338,7 @@ std::pair<int64_t, int> BellmanFord(MinCostMaxFlowArgs& args)
 
                 // See if we can relax flow if we can go there via the residual graph
                 // (it is then flowing to the current node and we can cancel the flow)
-                if (GetFlow(args, neighbour, currentNode) > 0)
+                if (neighbour != args.sourceNode && GetFlow(args, neighbour, currentNode) > 0)
                 {
                     const int64_t newDistance = currentDistance - GetCost(args, neighbour, currentNode);
                     if (newDistance < GetDistance(args, neighbour))
@@ -376,17 +377,21 @@ std::pair<int64_t, int> BellmanFord(MinCostMaxFlowArgs& args)
             bool foundCycle = false;
             if (CanFlow(args, currentNode, neighbour))
             {
-                const int64_t newDistance = currentDistance + GetCost(args, currentNode, neighbour);
-                if (newDistance < GetDistance(args, neighbour))
+                const int64_t cost = GetCost(args, currentNode, neighbour);
+                const int64_t newDistance = currentDistance + cost;
+                const int64_t oldDistance = GetDistance(args, neighbour);
+                if (newDistance < oldDistance)
                 {
                     foundCycle = true;
                 }
             }
 
-            if (GetFlow(args, neighbour, currentNode) > 0)
+            if (neighbour != args.sourceNode && GetFlow(args, neighbour, currentNode) > 0)
             {
-                const int64_t newDistance = currentDistance - GetCost(args, currentNode, neighbour);
-                if (newDistance < GetDistance(args, neighbour))
+                const int64_t cost = GetCost(args, neighbour, currentNode);
+                const int64_t newDistance = currentDistance - cost;
+                const int64_t oldDistance = GetDistance(args, neighbour);
+                if (newDistance < oldDistance)
                 {
                     foundCycle = true;
                 }
@@ -394,7 +399,6 @@ std::pair<int64_t, int> BellmanFord(MinCostMaxFlowArgs& args)
 
             if (foundCycle)
             {
-                // We found a negative cycle, now just find the cycle
                 std::vector<int> seenNodes;
                 seenNodes.push_back(currentNode);
                 int currentParent = GetParent(args, currentNode);
@@ -405,8 +409,6 @@ std::pair<int64_t, int> BellmanFord(MinCostMaxFlowArgs& args)
                     currentNode = currentParent;
                     currentParent = GetParent(args, currentNode);
                 }
-
-                // Negative infinitiy for negative cycle
                 return std::make_pair(-INF64, currentNode);
             }
         }
@@ -552,13 +554,18 @@ std::pair<int64_t, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArgume
                 currentNode = currentParent;
                 currentParent = GetParent(args, currentNode);
             }
+            seenNodes.push_back(seenNodes[0]);
+            std::reverse(seenNodes.begin(), seenNodes.end());
 
             printf("\n");
-            printf("Found Cycle: %i", seenNodes[0]);
+            int currentCost = 0;
+            printf("Found Cycle: %i (%i) (%s)", seenNodes[0], currentCost, GetNodeName(args, seenNodes[0]).c_str());
             for (int i = 1; i < seenNodes.size(); i++)
             {
-                printf(", %i", seenNodes[1]);
+                currentCost += seenNodes[i - 1] < seenNodes[i] ? GetCost(args, seenNodes[i - 1], seenNodes[i]) : -GetCost(args, seenNodes[i], seenNodes[i - 1]);
+                printf(", %i (%i) (%s)", seenNodes[i], currentCost, GetNodeName(args, seenNodes[i]).c_str());
             }
+
             printf("\n");
 
             DumpBuffer(args);
@@ -624,10 +631,6 @@ MinCostMaxFlowArgs AllocateMinCostMaxFlow(int numNodes)
 
     return args;
 }
-
-const int underMinBoundsCost = 0;
-const int isWithinClassBoundsCost = 1;
-const int useAdditionalSpaceCost = 2;
 
 int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chosenClass, int choiceNumber)
 {
@@ -917,6 +920,18 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
     return halfNonStudyingCost[choiceNumber] + isUnrolledClass;
 }
 
+const int64_t underMinBoundsCost = 0;
+const int64_t isWithinClassBoundsCost = 1;
+const int64_t AdditionalSpaceCost()
+{
+    Studancer tmpDancer;
+    tmpDancer.priorityGroup = NonStudying;
+
+    int64_t cost1 = GetChoiceCostForDancer(tmpDancer, "x", 2);
+    int64_t cost2 = GetChoiceCostForDancer(tmpDancer, "unenrolled", 3);
+    return 2;
+}
+
 const int choiceOffset = 12;
 int64_t GetCostForDancer(const Studancer& dancer)
 {
@@ -933,6 +948,94 @@ void MakeEdge(MinCostMaxFlowArgs& args, int u, int v, int64_t c, int cap)
 
     // residual
     args.adjecencyList[v].push_back(u);
+}
+
+void LoadExistingSolution(MinCostMaxFlowArgs& args, const std::vector<Studancer>& dancers, const std::vector<DanceClass>& classes)
+{
+    Assignment existingSolution = LoadExportAssignment("ClassAssignment_MCMF_updatable.csv", dancers, classes);
+
+    std::vector<int> dancerMap(dancers.size());
+    std::map<int, int> seenDancers;
+
+    std::vector<std::vector<std::string>> assignedClassesForDancer(dancers.size());
+
+    int dIndex = 0;
+    for (auto& classAssignment : existingSolution)
+    {
+        for (auto& dancer : classAssignment.second)
+        {
+            if (!seenDancers.count(dancer.relationNumber))
+            {
+                int i = 0;
+                for (auto& sourceNeighbour : args.adjecencyList[args.sourceNode])
+                {
+                    Studancer node = GetDancerFromNode(args, sourceNeighbour);
+                    if (node.relationNumber == dancer.relationNumber)
+                    {
+                        i = sourceNeighbour;
+                        break;
+                    }
+                }
+                dancerMap[dIndex] = i;
+                assignedClassesForDancer[dIndex] = std::vector<std::string>();
+                seenDancers.emplace(std::make_pair(dancer.relationNumber, dIndex++));
+
+            }
+            int dancerIndex = seenDancers[dancer.relationNumber];
+            assignedClassesForDancer[dancerIndex].push_back(classAssignment.first.name);
+        }
+    }
+
+    for (int d = 0; d < dIndex; d++)
+    {
+        int node = dancerMap[d];
+
+        Studancer dancer = GetDancerFromNode(args, node);
+        std::vector<std::string>& assignedClasses = assignedClassesForDancer[d];
+
+        for (auto& dancerNeighbour : args.adjecencyList[node])
+        {
+            if (GetNodeType(args, dancerNeighbour) != NodeType::Class)
+            {
+                continue;
+            }
+
+            std::string className = GetNodeName(args, dancerNeighbour);
+            if (contains(assignedClasses, className))
+            {
+                //printf("Assigning %i to %s\n", dancer.relationNumber, className.c_str());
+
+                int costNode = -1;
+                std::vector<int> costNodes;
+                for (auto& classNeighbour : args.adjecencyList[dancerNeighbour])
+                {
+                    if (GetNodeType(args, classNeighbour) == NodeType::ClassCost && CanFlow(args, dancerNeighbour, classNeighbour))
+                    {
+                        costNodes.push_back(classNeighbour);
+                    }
+                }
+
+                if (costNodes.size() > 0)
+                {
+                    std::sort(costNodes.begin(), costNodes.end());
+                    costNode = costNodes[0];
+                }
+
+                if (costNode != -1)
+                {
+                    AddFlow(args, args.sourceNode, node, 1);
+                    AddFlow(args, node, dancerNeighbour, 1);
+                    AddFlow(args, dancerNeighbour, costNode, 1);
+                    AddFlow(args, costNode, args.sinkNode, 1);
+                    //printf("Assigning %i to %s via %s\n", dancer.relationNumber, className.c_str(), GetNodeName(args, costNode).c_str());
+                }
+                else
+                {
+                    printf("Dropped %i from %s with priorityGroup %s due to update\n", dancer.relationNumber, className.c_str(), DancerPriorityGroupToString(dancer.priorityGroup).c_str());
+                }
+            }
+        }
+    }
 }
 
 MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, const std::vector<DanceClass>& classes, const CliArguments& cliArgs)
@@ -1012,6 +1115,8 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
         }
     }
 
+    int64_t additionalSpaceCost = AdditionalSpaceCost();
+
     // Encode classes (classes to different choice costs)
     for (int i = 0; i < classes.size(); i++)
     {
@@ -1038,13 +1143,18 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
         {
             MakeEdge(args, classNodeIndex, classNodeCostIndex, underMinBoundsCost, danceClass.minSize);
             MakeEdge(args, classNodeIndex, classNodeCostIndex + 1, isWithinClassBoundsCost, danceClass.maxSize - danceClass.minSize);
-            MakeEdge(args, classNodeIndex, classNodeCostIndex + 2, useAdditionalSpaceCost, danceClass.additionalSpace);
+            MakeEdge(args, classNodeIndex, classNodeCostIndex + 2, additionalSpaceCost, danceClass.additionalSpace);
 
             // We set cost and capacity to 0 as that was already calculated in the last edge
             MakeEdge(args, classNodeCostIndex, args.sinkNode, 0, INF);
             MakeEdge(args, classNodeCostIndex + 1, args.sinkNode, 0, INF);
             MakeEdge(args, classNodeCostIndex + 2, args.sinkNode, 0, INF);
         }
+    }
+
+    if (cliArgs.isUpdate)
+    {
+        LoadExistingSolution(args, dancers, classes);
     }
 
     // Check the encoding

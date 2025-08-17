@@ -61,6 +61,10 @@ CliArguments InitializeCliArgs(int argc, char* argv[])
         {
             parseNextArgAsMaxUnenroll = true;
         }
+        else if (arg == "--update")
+        {
+            cliArgs.isUpdate = true;
+        }
     }
 
     // auto enable mcmf

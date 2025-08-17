@@ -17,6 +17,8 @@ void RunLottery(const std::vector<Studancer>& dancers, const std::vector<DanceCl
     // Create assignment
     Assignment assignment = Lottery(dancers, classes);
 
+    ResortAssignment(assignment);
+
     // Print statistics to the terminal
     PrintAssignmentStats(assignment);
 
@@ -43,6 +45,8 @@ void RunMCMF(const std::vector<Studancer>& dancers, const std::vector<DanceClass
 
     // Retrieve solution from min cost max flow
     Assignment assignment = DecodeMinCostMaxFlow(mcmf);
+
+    ResortAssignment(assignment);
 
     // Dump the decision log
     DumpDecisionLog(mcmf);
