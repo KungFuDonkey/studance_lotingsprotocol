@@ -925,7 +925,7 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
 }
 
 const int64_t underMinBoundsCost = 0;
-const int64_t isWithinClassBoundsCost = 1;
+const int64_t isWithinClassBoundsCost = 125975;
 const int64_t AdditionalSpaceCost()
 {
     Studancer tmpDancer;
@@ -933,7 +933,7 @@ const int64_t AdditionalSpaceCost()
 
     int64_t cost1 = GetChoiceCostForDancer(tmpDancer, "x", 2);
     int64_t cost2 = GetChoiceCostForDancer(tmpDancer, "unenrolled", 3);
-    return 2;
+    return 125975 + 41992;
 }
 
 const int choiceOffset = 12;
@@ -1134,11 +1134,11 @@ MinCostMaxFlowArgs EncodeMinCostMaxFlow(const std::vector<Studancer>& dancers, c
         {
             if (danceClass.name == "unenrolled" && cliArgs.maxUnenroll != 0xFFFFFFFFU)
             {
-                MakeEdge(args, classNodeIndex, classNodeCostIndex, underMinBoundsCost, cliArgs.maxUnenroll);
+                MakeEdge(args, classNodeIndex, classNodeCostIndex, isWithinClassBoundsCost, cliArgs.maxUnenroll);
             }
             else
             {
-                MakeEdge(args, classNodeIndex, classNodeCostIndex, underMinBoundsCost, danceClass.maxSize);
+                MakeEdge(args, classNodeIndex, classNodeCostIndex, isWithinClassBoundsCost, danceClass.maxSize);
             }
 
             MakeEdge(args, classNodeCostIndex, args.sinkNode, 0, INF);
