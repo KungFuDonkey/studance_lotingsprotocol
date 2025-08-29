@@ -83,6 +83,8 @@ int main(int argc, char* argv[])
     // Load all dancers
     std::vector<Studancer> dancers = LoadDancers(classes);
 
+    PrintChoiceStats(dancers, classes);
+
     if (cliArgs.lottery)
     {
         RunLottery(dancers, classes, cliArgs);

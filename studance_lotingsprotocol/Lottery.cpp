@@ -17,7 +17,8 @@ void AssignPriorityGroup(std::vector<Studancer>& group, LotteryAssignment& assig
 
             if (assignment.find(chosenClass) == assignment.end())
             {
-                printf("");
+                printf("not found: %s", chosenClass.c_str());
+                exit(-1);
             }
             auto& classAssignment = assignment[chosenClass];
 
@@ -34,7 +35,7 @@ void AssignPriorityGroup(std::vector<Studancer>& group, LotteryAssignment& assig
 
 Assignment Lottery(const std::vector<Studancer>& dancers, const std::vector<DanceClass>& classes)
 {
-    std::vector<Studancer> priorityBuckets[DancerPriorityGroup::Count];
+    std::vector<Studancer> priorityBuckets[DancerPriorityGroup::Count + 1];
 
     std::vector<Studancer> followingAdvice;
 

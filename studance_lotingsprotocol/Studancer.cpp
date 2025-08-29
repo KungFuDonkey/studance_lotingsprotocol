@@ -391,6 +391,11 @@ std::vector<Studancer> LoadDancers(const std::vector<DanceClass>& classes)
     std::mt19937 g(rd());
     std::shuffle(dancers.begin(), dancers.end(), g);
 
+    for (int i = 0; i < dancers.size(); i++)
+    {
+        dancers[i].index = i;
+    }
+
     return dancers;
 }
 

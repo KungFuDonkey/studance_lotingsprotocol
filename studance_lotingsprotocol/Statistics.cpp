@@ -1,6 +1,116 @@
 #include "Statistics.h"
 #include "Utils.h"
 #include <fstream>
+#include <map>
+
+void PrintChoiceStats(const std::vector<Studancer>& dancers, const std::vector<DanceClass>& classes)
+{
+    // Create a table for all assignment groups, how many were first second and third choices
+
+    const int numClasses = (int)classes.size();
+    const int numClassBuckets = (int)classes.size() * 3;
+    int* classBuckets = new int[numClassBuckets];
+    std::map<std::string, int> classMap;
+
+    for (int i = 0; i < classes.size(); i++)
+    {
+        classMap.insert({ classes[i].name, i });
+    }
+
+    for (int i = 0; i < numClassBuckets; i++)
+    {
+        classBuckets[i] = 0;
+    }
+    int classIndex;
+    for (auto& dancer : dancers)
+    {
+        int choiceIndex = 0;
+        for (auto& choice : dancer.chosenClasses)
+        {
+            if (classMap.find(choice) != classMap.end())
+            {
+                classIndex = classMap[choice];
+                classBuckets[classIndex * 3 + choiceIndex]++;
+            }
+            choiceIndex++;
+        }
+    }
+
+    int longestClassName = 0;
+    for (auto& danceClass : classes)
+    {
+        if (danceClass.name.length() > longestClassName)
+        {
+            longestClassName = (int)danceClass.name.length();
+        }
+    }
+    longestClassName++;
+
+    std::string classNameColumn = "| Class Name";
+    for (int i = 0; i < longestClassName - (int)strlen("| Class Name") + 2; i++)
+    {
+        classNameColumn += " ";
+    }
+    classNameColumn += "|";
+    std::string headerRow = "";
+    for (int i = 0; i < classNameColumn.length(); i++)
+    {
+        headerRow += "=";
+    }
+
+    printf("Choice Statistics:\n\n");
+    printf("%s============================================================\n", headerRow.c_str());
+    printf("%s| Total ||    1st choice ||    2nd choice ||    3rd choice |\n", classNameColumn.c_str());
+    printf("%s============================================================\n", headerRow.c_str());
+
+    classIndex = 0;
+    for (auto& danceClass : classes)
+    {
+        std::string className = danceClass.name;
+        if (className == "unenrolled")
+        {
+            classIndex++;
+            continue;
+        }
+
+        printf("| %s", className.c_str());
+
+        for (int space = 0; space < longestClassName - className.length(); space++)
+        {
+            printf(" ");
+        }
+        printf("|");
+
+        int total = classBuckets[classIndex * 3 + 0] + classBuckets[classIndex * 3 + 1] + classBuckets[classIndex * 3 + 2];
+        if (total == 0)
+        {
+            printf("|     0 ||             0 ||             0 ||             0 |\n");
+        }
+        else
+        {
+            std::string totalSpacing = total >= 100 ? "  " : total >= 10 ? "   " : "    ";
+            printf("| %s%i |", totalSpacing.c_str(), total);
+
+            float percentages[3] = {
+                ((float)classBuckets[classIndex * 3 + 0] / (float)total) * 100.f,
+                ((float)classBuckets[classIndex * 3 + 1] / (float)total) * 100.f,
+                ((float)classBuckets[classIndex * 3 + 2] / (float)total) * 100.f
+            };
+
+            int bucketIndex = 0;
+            for (int bucket = 0; bucket < 3; bucket++)
+            {
+                int v = classBuckets[classIndex * 3 + bucket];
+                std::string numberSpacing = v >= 100 ? "" : v >= 10 ? " " : "  ";
+                printf("|           %s%i |", numberSpacing.c_str(), v);
+                bucketIndex++;
+            }
+            printf("\n");
+        }
+        classIndex++;
+    }
+    printf("%s============================================================\n\n", headerRow.c_str());
+}
 
 void PrintAssignmentStats(const Assignment& assignment)
 {
@@ -9,7 +119,7 @@ void PrintAssignmentStats(const Assignment& assignment)
     int buckets[DancerPriorityGroup::Count][4] = {};
 
     const int numClasses = (int)assignment.size();
-    const int numClassBuckets = (int)assignment.size() * 3;
+    const int numClassBuckets = (int)assignment.size() * 5;
     int* classBuckets = new int[numClassBuckets];
     for (int i = 0; i < numClassBuckets; i++)
     {
@@ -39,7 +149,11 @@ void PrintAssignmentStats(const Assignment& assignment)
 
                     if (classAssignment.first.name != "unenrolled")
                     {
-                        classBuckets[classIndex * 3 + i]++;
+                        classBuckets[classIndex * 4 + i]++;
+                        if (i == 0 && contains(dancer.advisedClasses, classAssignment.first.name))
+                        {
+                            classBuckets[classIndex * 4 + 3]++;
+                        }
                     }
                     else
                     {
@@ -168,7 +282,7 @@ void PrintAssignmentStats(const Assignment& assignment)
             }
             printf("|");
 
-            int total = classBuckets[classIndex * 3 + 0] + classBuckets[classIndex * 3 + 1] + classBuckets[classIndex * 3 + 2];
+            int total = classBuckets[classIndex * 4 + 0] + classBuckets[classIndex * 4 + 1] + classBuckets[classIndex * 4 + 2];
             if (total == 0)
             {
                 printf("|     0 ||   0 (  0.00%%) ||   0 (  0.00%%) ||   0 (  0.00%%) |\n");
@@ -179,21 +293,23 @@ void PrintAssignmentStats(const Assignment& assignment)
                 printf("| %s%i |", totalSpacing.c_str(), total);
 
                 float percentages[3] = {
-                    ((float)classBuckets[classIndex * 3 + 0] / (float)total) * 100.f,
-                    ((float)classBuckets[classIndex * 3 + 1] / (float)total) * 100.f,
-                    ((float)classBuckets[classIndex * 3 + 2] / (float)total) * 100.f
+                    ((float)classBuckets[classIndex * 4 + 0] / (float)total) * 100.f,
+                    ((float)classBuckets[classIndex * 4 + 1] / (float)total) * 100.f,
+                    ((float)classBuckets[classIndex * 4 + 2] / (float)total) * 100.f
                 };
 
                 int bucketIndex = 0;
                 for (int bucket = 0; bucket < 3; bucket++)
                 {
                     float p = percentages[bucket];
-                    int v = classBuckets[classIndex * 3 + bucket];
+                    int v = classBuckets[classIndex * 4 + bucket];
                     std::string percentageSpacing = p == 100.0f ? "" : p >= 10.0f ? " " : "  ";
                     std::string numberSpacing = v >= 100 ? "" : v >= 10 ? " " : "  ";
                     printf("| %s%i (%s%.2f%%) |", numberSpacing.c_str(), v, percentageSpacing.c_str(), p);
                     bucketIndex++;
                 }
+
+                printf(" Advised: %i", classBuckets[classIndex * 4 + 3]);
                 printf("\n");
             }
             classIndex++;

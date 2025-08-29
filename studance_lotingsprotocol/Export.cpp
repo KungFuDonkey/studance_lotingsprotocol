@@ -62,8 +62,10 @@ void ExportAssignmentAsCsv(const Assignment& assignment, const std::string& outp
 
     for (auto& classAssignment : assignment)
     {
+        std::string name = classAssignment.first.name;
+        name[0] = toupper(name[0]);
         outputFile << preHeader;
-        outputFile << classAssignment.first.name << ",";
+        outputFile << name << ",";
         outputFile << postHeader << "\n";
 
         for (auto& dancer : classAssignment.second)

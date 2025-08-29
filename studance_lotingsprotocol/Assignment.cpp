@@ -7,7 +7,7 @@ bool CompareDancers(const Studancer& dancer1, const Studancer& dancer2)
 	{
 		//return dancer1.relationNumber < dancer2.relationNumber;
 		// Random order should be kept only order based on prio group
-		return true;
+		return dancer1.index < dancer2.index;
 	}
 
 	return dancer1.priorityGroup < dancer2.priorityGroup;
@@ -17,6 +17,9 @@ void ResortAssignment(Assignment& assignment)
 {
 	for (auto& classAssignment : assignment)
 	{
-		std::sort(classAssignment.second.begin(), classAssignment.second.end(), CompareDancers);
+		if (classAssignment.second.size() > 0)
+		{
+			std::sort(classAssignment.second.begin(), classAssignment.second.end(), CompareDancers);
+		}
 	}
 }

@@ -33,6 +33,7 @@ struct Studancer
     std::vector<std::string> chosenClasses;
     int relationNumber;
     std::string tableRow;
+    int index;
 };
 
 std::string GetDancersInputHeader();
