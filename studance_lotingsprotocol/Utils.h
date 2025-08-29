@@ -28,6 +28,24 @@ bool contains(std::vector<T> vec, const T& value)
     return std::find(vec.begin(), vec.end(), value) != vec.end();
 }
 
+template<typename T>
+int FindItemInVector(std::vector<T> vector, T& item)
+{
+    int index = 0;
+    for (auto& x : vector)
+    {
+        if (x == item)
+        {
+            return index;
+        }
+        index++;
+    }
+
+    return -1;
+}
+
+std::string ChoiceNumberToString(int number);
+
 fs::path GetInputFolder();
 
 fs::path GetOutputFolder();

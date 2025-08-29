@@ -81,8 +81,26 @@ fs::path FindFolderInParentDirs(const std::string& folder)
     return currentPath / folder;
 }
 
-
 fs::path inputFolder = "";
+std::string ChoiceNumberToString(int number)
+{
+    if (number == 0)
+    {
+        return "1st";
+    }
+    else if (number == 1)
+    {
+        return "2nd";
+    }
+    else if (number == 2)
+    {
+        return "3rd";
+    }
+    else
+    {
+        return "unassigned";
+    }
+}
 fs::path GetInputFolder()
 {
     if (inputFolder != "")

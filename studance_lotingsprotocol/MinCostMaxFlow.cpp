@@ -171,13 +171,17 @@ inline int64_t GetDistance(const MinCostMaxFlowArgs& args, int u)
     }
     return args.distance[u];
 }
-inline void SetDistance(MinCostMaxFlowArgs& args, int u, int64_t value)
+inline void SetDistance(MinCostMaxFlowArgs& args, int u, int64_t value, bool debug = false)
 {
     if (u >= args.numNodes)
     {
         printf("Out of range exception in SetDistance");
         DumpBuffer(args);
         exit(-1);
+    }
+    if (debug && u == args.sinkNode)
+    {
+        printf("Updated sink node: %lli\n", value);
     }
     args.distance[u] = value;
 }
@@ -296,7 +300,7 @@ inline void InitArray64(int64_t* array, int64_t value, int numElements)
     }
 }
 
-std::pair<int64_t, int> BellmanFord(MinCostMaxFlowArgs& args)
+std::pair<int64_t, int> BellmanFord(MinCostMaxFlowArgs& args, bool debug = false)
 {
     // Initialize infinite distances
     InitArray64(args.distance, INF64, args.numNodes);
@@ -330,7 +334,7 @@ std::pair<int64_t, int> BellmanFord(MinCostMaxFlowArgs& args)
                     const int64_t newDistance = currentDistance + GetCost(args, currentNode, neighbour);
                     if (newDistance < GetDistance(args, neighbour))
                     {
-                        SetDistance(args, neighbour, newDistance);
+                        SetDistance(args, neighbour, newDistance, debug);
                         SetParent(args, neighbour, currentNode);
                         hadUpdate = true;
                     }
@@ -343,7 +347,7 @@ std::pair<int64_t, int> BellmanFord(MinCostMaxFlowArgs& args)
                     const int64_t newDistance = currentDistance - GetCost(args, neighbour, currentNode);
                     if (newDistance < GetDistance(args, neighbour))
                     {
-                        SetDistance(args, neighbour, newDistance);
+                        SetDistance(args, neighbour, newDistance, debug);
                         SetParent(args, neighbour, currentNode);
                         hadUpdate = true;
                     }
@@ -460,7 +464,7 @@ std::pair<int64_t, int> MinCostMaxFlow(MinCostMaxFlowArgs& args, const CliArgume
                 {
                     // residual graph
                     AddFlow(args, currentNode, p, -1);
-                    minCost -= GetCost(args, p, currentNode);
+                    minCost -= GetCost(args, currentNode, p);
                 }
 
                 currentNode = p;
@@ -762,7 +766,7 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
         0,0,0
     };
 
-    increment[0] = 8988;
+    increment[0] = 377923;
     start[0] = baseCost + increment[0] * 3 + 1;
 
     for (int i = 0; i < 2; i++)
@@ -785,7 +789,7 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
     int64_t unenrollBase = groupCost[0][2];
     groupCost[0][3] = unenrollBase * 1.5f;
     groupCost[1][3] = unenrollBase * 1.4f;
-    groupCost[2][3] = unenrollBase * 1.3f;
+    groupCost[2][3] = groupCost[2][2] + 100;
 
     for (int i = 0; i < 4; i++)
     {
@@ -819,22 +823,22 @@ int64_t GetChoiceCostForDancer(const Studancer& dancer, const std::string& chose
 
     for (int i = 0; i < 4; i++)
     {
-        gapYearCost[i] = groupCost[2][i] + 1;
+        gapYearCost[i] = groupCost[2][i] + 1 + i;
     }
 
     for (int i = 0; i < 4; i++)
     {
-        halfGapYearCost[i] = groupCost[2][i] + 2;
+        halfGapYearCost[i] = groupCost[2][i] + 2 + i;
     }
 
     for (int i = 0; i < 4; i++)
     {
-        nonStudyingCost[i] = groupCost[2][i] + 3;
+        nonStudyingCost[i] = groupCost[2][i] + 3 + i;
     }
 
     for (int i = 0; i < 4; i++)
     {
-        halfNonStudyingCost[i] = groupCost[2][i] + 4;
+        halfNonStudyingCost[i] = groupCost[2][i] + 4 + i;
     }
 #endif
 
@@ -1349,11 +1353,14 @@ void DumpDecisionLog(const MinCostMaxFlowArgs& args)
             const Studancer& dancer = GetDancerFromNode(args, path[1]);
             std::string className = GetNodeName(args, path[2]);
 
+            int choiceIndex = FindItemInVector(dancer.chosenClasses, className);
+            std::string choice = ChoiceNumberToString(choiceIndex);
+
             outputFile << "Assigned dancer ";
             outputFile << dancer.relationNumber;
             outputFile << " with priority group ";
             outputFile << DancerPriorityGroupToString(dancer.priorityGroup);
-            outputFile << " to ";
+            outputFile << " to their " << choice << " choice: ";
             outputFile << className;
 
             // if the path is longer than 4 someone else was moved
@@ -1374,12 +1381,17 @@ void DumpDecisionLog(const MinCostMaxFlowArgs& args)
                     if (currentNodeType == Dancer && nextNodeType == Class)
                     {
                         const Studancer& updatedDancer = GetDancerFromNode(args, currentNode);
+
                         std::string updatedClass = GetNodeName(args, nextNode);
+
+                        int classIndex = FindItemInVector(updatedDancer.chosenClasses, updatedClass);
+                        std::string choice = ChoiceNumberToString(classIndex);
+
                         outputFile << "Assigned dancer ";
                         outputFile << updatedDancer.relationNumber;
                         outputFile << " with priority group ";
                         outputFile << DancerPriorityGroupToString(updatedDancer.priorityGroup);
-                        outputFile << " to ";
+                        outputFile << " to their " << choice << " choice: ";
                         outputFile << updatedClass;
                         outputFile << "\n";
                     }
@@ -1387,11 +1399,15 @@ void DumpDecisionLog(const MinCostMaxFlowArgs& args)
                     {
                         const Studancer& updatedDancer = GetDancerFromNode(args, nextNode);
                         std::string updatedClass = GetNodeName(args, currentNode);
+
+                        int classIndex = FindItemInVector(updatedDancer.chosenClasses, updatedClass);
+                        std::string choice = ChoiceNumberToString(classIndex);
+
                         outputFile << "Unassigned dancer ";
                         outputFile << updatedDancer.relationNumber;
                         outputFile << " with priority group ";
                         outputFile << DancerPriorityGroupToString(updatedDancer.priorityGroup);
-                        outputFile << " from ";
+                        outputFile << " from their " << choice << " choice: ";
                         outputFile << updatedClass;
                         outputFile << "\n";
                     }
